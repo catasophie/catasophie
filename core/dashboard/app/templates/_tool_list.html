@@ -1,0 +1,27 @@
+<div class="grid">
+  {% for entry in tools %}
+  {% set tool = entry.tool %}
+  <div class="card">
+    <h3>{{ tool.name }}</h3>
+    <p>{{ tool.description }}</p>
+    {% if not tool.valid %}
+      <span class="badge err">invalid manifest</span>
+      <p>{{ tool.errors|join(', ') }}</p>
+    {% elif not entry.can_access %}
+      <span class="badge warn">admin only</span>
+    {% else %}
+      <span class="badge {{ 'running' if entry.status == 'running' else 'stopped' }}">{{ entry.status }}</span>
+      <div class="actions">
+        {% if entry.status == 'running' %}
+        <button class="secondary" hx-post="/tools/{{ tool.id }}/stop" hx-target="closest .card" hx-swap="beforeend">Stop</button>
+        <a href="/tools/{{ tool.id }}/"><button>Open</button></a>
+        {% else %}
+        <button hx-post="/tools/{{ tool.id }}/start" hx-target="closest .card" hx-swap="beforeend">Start</button>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <p>No tools installed yet. Drop one into <code>tools/</code> following <code>docs/PLUGIN_SPEC.md</code>.</p>
+  {% endfor %}
+</div>

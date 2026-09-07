@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="system-health" hx-get="/fragments/system-health" hx-trigger="load, every 10s" hx-swap="innerHTML">
+  {% include "_system_health.html" %}
+</div>
+
+<h2>Tools</h2>
+<div id="tool-list" hx-get="/fragments/tools" hx-trigger="every 15s" hx-swap="innerHTML">
+  {% include "_tool_list.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+# Core services (reverse proxy, auth, dashboard) live directly in this file.
+#
+# Tools are intentionally NOT included here: each tool is its own
+# independent compose project (tools/<id>/docker-compose.yml) that the
+# dashboard starts/stops on demand via `podman-compose -f tools/<id>/...`
+# (see core/dashboard/app/tool_control.py and docs/PLUGIN_SPEC.md). This
+# keeps tool discovery fully dynamic - no edits needed here when a new
+# tool is dropped into tools/.
+#
+# The "catasophie" network is created once by install.sh
+# (podman network create catasophie) and referenced as external by every
+# core/tool compose file.
+
+networks:
+  catasophie:
+    external: true
+
+volumes:
+  auth-data:
+  proxy-data:
+  proxy-config:
+
+services:
+  proxy:
+    image: caddy:2-alpine
+    ports:
+      - "${DASHBOARD_HTTP_PORT:-80}:80"
+      - "${DASHBOARD_PORT:-443}:443"
+    volumes:
+      - ./core/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - proxy-data:/data
+      - proxy-config:/config
+    environment:
+      - CATASOPHIE_HOSTNAME=${CATASOPHIE_HOSTNAME:-catasophie.local}
+    networks:
+      - catasophie
+    restart: unless-stopped
+    depends_on:
+      - auth
+      - dashboard
+
+  auth:
+    image: authelia/authelia:latest
+    volumes:
+      - ./core/auth/configuration.yml:/config/configuration.yml:ro
+      - ./core/auth/users_database.yml:/config/users_database.yml
+      - auth-data:/config/data
+    environment:
+      - TZ=UTC
+      - AUTHELIA_SESSION_SECRET=${AUTH_SESSION_SECRET}
+      - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTH_STORAGE_ENCRYPTION_KEY}
+      - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET=${AUTH_JWT_SECRET}
+    networks:
+      - catasophie
+    restart: unless-stopped
+
+  dashboard:
+    build: ./core/dashboard
+    # Needed so this container's "root" maps to the real host root, which
+    # owns the Podman API socket (rootless user-namespace remapping would
+    # otherwise cause a permission-denied on the mounted socket).
+    userns_mode: "host"
+    # SELinux (enforcing on the podman machine VM / many Linux distros)
+    # blocks connecting to a bind-mounted Podman API socket even when the
+    # file is correctly relabeled, because the *socket connect* itself
+    # requires a policy allowance that container-selinux doesn't grant by
+    # default. Disabling SELinux labeling for this container is safe here
+    # since it already has full access to the host's Podman socket anyway
+    # (that's the whole point - it manages tool containers).
+    security_opt:
+      - label=disable
+    volumes:
+      # IMPORTANT: mounted at the SAME absolute path as on the host.
+      # The dashboard drives `podman-compose` against the host's Podman
+      # API (via the socket below), so any paths it passes to
+      # `podman-compose -f ...` must resolve to real host paths - not
+      # container-internal paths - hence source == target here. Read-write
+      # because the setup wizard writes to .env and
+      # core/auth/users_database.yml.
+      - ${CATASOPHIE_ROOT}:${CATASOPHIE_ROOT}
+      - ${PODMAN_SOCK}:${PODMAN_SOCK}:z
+      # Read-only access to the host's power supply / thermal info, needed
+      # for the "laptop" power monitor backend and CPU temp reporting.
+      - /sys/class/power_supply:/sys/class/power_supply:ro
+      - /sys/class/thermal:/sys/class/thermal:ro
+    environment:
+      - CATASOPHIE_ROOT=${CATASOPHIE_ROOT}
+      - CATASOPHIE_ENV_FILE=${CATASOPHIE_ROOT}/.env
+      - TOOLS_DIR=${CATASOPHIE_ROOT}/tools
+      - CONTAINER_HOST=unix://${PODMAN_SOCK}
+    networks:
+      - catasophie
+    restart: unless-stopped

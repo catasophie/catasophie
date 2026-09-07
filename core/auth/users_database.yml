@@ -1,0 +1,19 @@
+# Default user database - a single bootstrap admin account.
+# The first-boot wizard (core/dashboard/app/wizard.py) rewrites this file
+# with a real password hash chosen during setup. Until setup is completed,
+# the placeholder password below is "changeme" - CHANGE THIS IMMEDIATELY,
+# or better, just run the setup wizard which replaces it for you.
+#
+# To manually regenerate a password hash, run:
+#   ./scripts/generate-admin-password.sh
+users:
+  admin:
+    disabled: false
+    displayname: "Admin"
+    # Placeholder argon2id hash for the password "changeme".
+    # Regenerate this before any real use - see the instructions above.
+    password: "$argon2id$v=19$m=65536,t=3,p=4$c2FsdHNhbHRzYWx0c2FsdA$Pd0YrJ0K1E2yF3z7l9m8V6xW2QwZk3Xh4vG9dS1RJyE"
+    email: admin@catasophie.local
+    groups:
+      - admin
+      - user

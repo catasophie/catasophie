@@ -1,0 +1,14 @@
+{
+  "id": "_template",
+  "name": "Template Tool",
+  "description": "Copy this folder to scaffold a new tool. See docs/PLUGIN_SPEC.md.",
+  "icon": "puzzle",
+  "category": "information",
+  "url_path": "/tools/_template/",
+  "port": 8000,
+  "health_check": "/health",
+  "autostart": false,
+  "required_role": "user",
+  "requires_host_device": [],
+  "version": "0.1.0"
+}
