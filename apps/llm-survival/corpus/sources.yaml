@@ -1,0 +1,46 @@
+# Curated offline survival & medical reference sources.
+#
+# Each entry is fetched by fetch.sh into ./data/ (gitignored - these are
+# large files and/or carry redistribution terms that make committing them
+# to git inappropriate). Review the license notes before distributing this
+# box to others.
+#
+# checksum: sha256, filled in once you've fetched a copy and verified it
+# against the publisher (values below are left blank intentionally -
+# fetch.sh will print the computed hash for you to record here).
+
+sources:
+  - id: fm21-76-survival-manual
+    title: "US Army Survival Manual (FM 21-76)"
+    url: https://archive.org/download/FM21-76-1/FM21-76-1.pdf
+    format: pdf
+    license: "Public domain (US government work)"
+    sha256: ""
+    ingest: knowledge   # goes into the Open WebUI knowledge base (RAG)
+
+  - id: fema-are-you-ready
+    title: "FEMA - Are You Ready? An In-depth Guide to Citizen Preparedness"
+    url: https://www.fema.gov/pdf/areyouready/areyouready_full.pdf
+    format: pdf
+    license: "Public domain (US government work)"
+    sha256: ""
+    ingest: knowledge
+
+  - id: wikimed
+    title: "WikiMed Medical Encyclopedia (Kiwix ZIM)"
+    url: https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi.zim
+    format: zim
+    license: "CC BY-SA (Wikipedia content)"
+    sha256: ""
+    ingest: kiwix       # served directly via kiwix-serve, not chunked into RAG
+
+  - id: hesperian-where-there-is-no-doctor
+    title: "Hesperian - Where There Is No Doctor"
+    url: https://hesperian.org/wp-content/uploads/pdf/en_wtnd_2018/en_wtnd_2018_full.pdf
+    format: pdf
+    license: >-
+      Hesperian permits free reproduction for non-commercial humanitarian/
+      educational use - confirm current terms at hesperian.org before
+      distributing this box beyond personal/household use.
+    sha256: ""
+    ingest: knowledge

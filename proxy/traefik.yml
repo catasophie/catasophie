@@ -1,0 +1,21 @@
+# Traefik static configuration.
+# Dynamic routing config comes entirely from container labels (see each
+# app's docker-compose.yml) via the docker/podman provider below - no file
+# provider needed, so adding an app never requires touching this file.
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: catasophie
+
+api:
+  dashboard: true
+  insecure: true # only bound to 127.0.0.1 (see root docker-compose.yml)
+
+log:
+  level: INFO

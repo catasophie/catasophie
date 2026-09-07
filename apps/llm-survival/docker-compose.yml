@@ -1,0 +1,77 @@
+# Offline LLM + curated survival/medical reference corpus.
+#
+# Services:
+#   - ollama:    model runtime (OpenAI-compatible API), pulls ${OLLAMA_MODEL}
+#                on first start
+#   - webui:     Open WebUI - chat frontend with built-in document/RAG
+#                knowledge-base support (citations against uploaded docs)
+#   - kiwix:     serves the WikiMed offline encyclopedia ZIM as a browsable
+#                supplementary reference (not part of the RAG pipeline)
+#
+# Curated corpus (see corpus/sources.yaml + corpus/fetch.sh) is ingested
+# into Open WebUI's knowledge base via ingest.sh - run that after fetch.sh
+# and after webui has started at least once.
+
+networks:
+  catasophie:
+    external: true
+
+volumes:
+  ollama-data:
+  webui-data:
+
+services:
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - catasophie
+    restart: unless-stopped
+    # No GPU passthrough configured by default - add `deploy.resources` /
+    # `devices` here if you have an NVIDIA GPU + nvidia-container-toolkit.
+
+  ollama-pull:
+    image: docker.io/ollama/ollama:latest
+    depends_on:
+      - ollama
+    networks:
+      - catasophie
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until ollama --host ollama:11434 list >/dev/null 2>&1; do sleep 2; done
+        ollama --host ollama:11434 pull "${OLLAMA_MODEL:-llama3.2:3b}"
+    restart: "no"
+
+  webui:
+    image: ghcr.io/open-webui/open-webui:main
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_AUTH=true
+    volumes:
+      - webui-data:/app/backend/data
+    networks:
+      - catasophie
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.llm-webui.rule=PathPrefix(`/llm/`)
+      - traefik.http.services.llm-webui.loadbalancer.server.port=8080
+
+  kiwix:
+    image: docker.io/kiwix/kiwix-serve:latest
+    command: ["--library", "/data/library.xml"]
+    volumes:
+      - ./data/kiwix:/data
+    networks:
+      - catasophie
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.llm-kiwix.rule=PathPrefix(`/llm/kiwix/`)
+      - traefik.http.services.llm-kiwix.loadbalancer.server.port=80
+      - traefik.http.middlewares.llm-kiwix-strip.stripprefix.prefixes=/llm/kiwix
+      - traefik.http.routers.llm-kiwix.middlewares=llm-kiwix-strip

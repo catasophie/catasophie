@@ -1,0 +1,29 @@
+# Example service - replace with your actual service(s).
+# Conventions (see docs/ADDING_AN_APP.md):
+#   - join the shared external "catasophie" network
+#   - do NOT publish ports to the host; only Traefik should reach you
+#   - persistent data goes under ./data (gitignored)
+#   - add Traefik labels so the proxy auto-discovers you, no central
+#     proxy config changes required
+
+networks:
+  catasophie:
+    external: true
+
+services:
+  __APP_ID__:
+    image: docker.io/hashicorp/http-echo:latest
+    command: ["-text=replace me", "-listen=:__PORT__"]
+    volumes:
+      - ./data:/data
+    networks:
+      - catasophie
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.__APP_ID__.rule=PathPrefix(`__URL_PATH__`)
+      - traefik.http.services.__APP_ID__.loadbalancer.server.port=__PORT__
+      # Strip the path prefix if your app doesn't expect it mounted at a
+      # sub-path (remove this middleware if your app is prefix-aware):
+      - traefik.http.middlewares.__APP_ID__-strip.stripprefix.prefixes=__URL_PATH__
+      - traefik.http.routers.__APP_ID__.middlewares=__APP_ID__-strip
