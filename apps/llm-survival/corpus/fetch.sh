@@ -39,16 +39,19 @@ for entry in "${entries[@]}"; do
   fi
 done
 
-# The kiwix ZIM needs a library.xml for kiwix-serve to find it.
+# The kiwix ZIM needs a library.xml for kiwix-serve to find it. Uses the
+# same containerized kiwix-manage as the running kiwix-serve image, so it
+# doesn't depend on kiwix tools being installed on the host.
 if [ -f data/raw/wikimed.zim ]; then
   mkdir -p ../data/kiwix
   cp -n data/raw/wikimed.zim ../data/kiwix/wikimed.zim
-  if command -v kiwix-manage >/dev/null 2>&1; then
-    kiwix-manage ../data/kiwix/library.xml add ../data/kiwix/wikimed.zim
-  else
-    echo "note: kiwix-manage not found locally - run inside the kiwix container instead:"
-    echo "  podman run --rm -v \$(pwd)/../data/kiwix:/data docker.io/kiwix/kiwix-serve:latest kiwix-manage /data/library.xml add /data/wikimed.zim"
+  if [ ! -f ../data/kiwix/library.xml ]; then
+    echo '<?xml version="1.0" encoding="UTF-8"?><library version="20110515"></library>' \
+      > ../data/kiwix/library.xml
   fi
+  podman run --rm -v "$(pwd)/../data/kiwix:/data" --entrypoint kiwix-manage \
+    ghcr.io/kiwix/kiwix-serve:latest /data/library.xml add /data/wikimed.zim
+  echo "Restart the kiwix service to pick up the new library: podman-compose -f ../docker-compose.yml restart kiwix"
 fi
 
 echo "Done. PDFs are in data/raw/ - run ./ingest.sh to load them into Open WebUI's knowledge base."

@@ -58,11 +58,17 @@ services:
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.routers.llm-webui.rule=PathPrefix(`/llm/`)
+      # Host-based (not PathPrefix) routing: Open WebUI's frontend embeds
+      # root-relative asset paths (/static/..., /_app/...) with no
+      # configurable base path, so mounting it under /llm/ breaks asset
+      # loading (browser requests bypass the /llm/ prefix entirely). Add
+      # "llm.catasophie.local" (or your CATASOPHIE_HOSTNAME equivalent)
+      # to /etc/hosts pointing at this box - see README.
+      - traefik.http.routers.llm-webui.rule=Host(`llm.catasophie.local`)
       - traefik.http.services.llm-webui.loadbalancer.server.port=8080
 
   kiwix:
-    image: docker.io/kiwix/kiwix-serve:latest
+    image: ghcr.io/kiwix/kiwix-serve:latest
     command: ["--library", "/data/library.xml"]
     volumes:
       - ./data/kiwix:/data
@@ -72,6 +78,6 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.llm-kiwix.rule=PathPrefix(`/llm/kiwix/`)
-      - traefik.http.services.llm-kiwix.loadbalancer.server.port=80
+      - traefik.http.services.llm-kiwix.loadbalancer.server.port=8080
       - traefik.http.middlewares.llm-kiwix-strip.stripprefix.prefixes=/llm/kiwix
       - traefik.http.routers.llm-kiwix.middlewares=llm-kiwix-strip

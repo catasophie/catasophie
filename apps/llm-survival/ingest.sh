@@ -3,24 +3,36 @@
 # "Survival & Medical" knowledge collection via its REST API, so the LLM
 # can retrieve and cite them.
 #
-# Requires: Open WebUI running and reachable (default: through the proxy
-# at http://catasophie.local/llm/, or directly at http://localhost:<port>
-# if you've exposed it for setup), an admin account created via the web
-# UI on first visit, and an API key generated from
+# Requires: Open WebUI running and reachable, an admin account created
+# via the web UI on first visit, and an API key generated from
 # Settings -> Account -> API Keys.
 #
+# webui is routed by Host (not PathPrefix - see docker-compose.yml), so
+# OPEN_WEBUI_URL should point at the proxy and OPEN_WEBUI_HOST_HEADER
+# supplies the Host header, unless you've added llm.catasophie.local to
+# /etc/hosts and can use it directly as OPEN_WEBUI_URL instead.
+#
 # Usage:
-#   OPEN_WEBUI_URL=http://catasophie.local/llm \
+#   OPEN_WEBUI_URL=http://llm.catasophie.local:8080 \
+#   OPEN_WEBUI_API_KEY=sk-... \
+#   ./ingest.sh
+#
+#   # or, without /etc/hosts configured:
+#   OPEN_WEBUI_URL=http://localhost:8080 \
+#   OPEN_WEBUI_HOST_HEADER=llm.catasophie.local \
 #   OPEN_WEBUI_API_KEY=sk-... \
 #   ./ingest.sh
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-: "${OPEN_WEBUI_URL:?set OPEN_WEBUI_URL, e.g. http://catasophie.local/llm}"
+: "${OPEN_WEBUI_URL:?set OPEN_WEBUI_URL, e.g. http://llm.catasophie.local:8080}"
 : "${OPEN_WEBUI_API_KEY:?set OPEN_WEBUI_API_KEY (Settings -> Account -> API Keys in Open WebUI)}"
 
 KB_NAME="Survival & Medical"
 auth=(-H "Authorization: Bearer ${OPEN_WEBUI_API_KEY}")
+if [ -n "${OPEN_WEBUI_HOST_HEADER:-}" ]; then
+  auth+=(-H "Host: ${OPEN_WEBUI_HOST_HEADER}")
+fi
 
 echo "Looking up (or creating) knowledge collection '${KB_NAME}'..."
 kb_id=$(curl -fsS "${auth[@]}" "${OPEN_WEBUI_URL}/api/v1/knowledge/list" \

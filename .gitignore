@@ -1,4 +1,5 @@
 .env
+.installed
 data/
 **/data/
 *.log
@@ -7,4 +8,4 @@ __pycache__/
 .DS_Store
 node_modules/
 .venv/
-backups/*.tar.gz
+backups/

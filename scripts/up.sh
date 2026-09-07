@@ -5,6 +5,8 @@
 #   ./scripts/up.sh llm-survival offline-maps   # proxy + selected apps
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+# shellcheck source=lib/common.sh
+source "scripts/lib/common.sh"
 
 if ! podman network exists catasophie 2>/dev/null; then
   echo "Creating podman network 'catasophie'..."
@@ -15,6 +17,11 @@ if [ ! -f .env ]; then
   echo "No .env found, copying .env.example -> .env"
   cp .env.example .env
 fi
+
+ensure_podman_sock
+
+# shellcheck disable=SC1091
+set -a; source .env; set +a
 
 echo "Starting core proxy..."
 podman-compose up -d
@@ -32,4 +39,4 @@ for app in "$@"; do
   podman-compose -f "$dir/docker-compose.yml" up -d
 done
 
-echo "Done. Visit http://${CATASOPHIE_HOSTNAME:-catasophie.local}/ (or http://<device-ip>/)"
+echo "Done. Visit http://${CATASOPHIE_HOSTNAME:-catasophie.local}:${PROXY_HTTP_PORT:-8080}/ (or http://<device-ip>:${PROXY_HTTP_PORT:-8080}/)"

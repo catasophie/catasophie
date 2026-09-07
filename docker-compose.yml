@@ -44,5 +44,9 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.landing.rule=PathPrefix(`/`)
-      - traefik.http.routers.landing.priority=1
+      # No explicit priority - Traefik auto-prioritizes by rule
+      # specificity, so this catch-all naturally loses to every app's
+      # more specific PathPrefix (e.g. `/maps/`). Do NOT hardcode a
+      # priority here - it defeats that and causes 404s (see
+      # docs/ADDING_AN_APP.md).
       - traefik.http.services.landing.loadbalancer.server.port=80

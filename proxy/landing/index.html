@@ -17,9 +17,10 @@
   <h1>catasophie</h1>
   <p>Offline-first tools. Add or remove entries here as you enable/disable apps.</p>
 
-  <a class="app" href="/llm/">
+  <a class="app" id="llm-link" href="#">
     Survival &amp; Medical Assistant
-    <small>Offline LLM + curated reference corpus (Ollama + Open WebUI)</small>
+    <small>Offline LLM + curated reference corpus (Ollama + Open WebUI) -
+    requires "llm.catasophie.local" in /etc/hosts (see README)</small>
   </a>
   <a class="app" href="/llm/kiwix/">
     WikiMed Offline Reference
@@ -31,5 +32,11 @@
   </a>
 
   <footer>Edit proxy/landing/index.html to update this list.</footer>
+  <script>
+    // webui is Host-routed (not path-based) - see apps/llm-survival/docker-compose.yml -
+    // so build its link from the current origin's port with an "llm." hostname prefix.
+    document.getElementById('llm-link').href =
+      location.protocol + '//llm.catasophie.local' + (location.port ? ':' + location.port : '') + '/';
+  </script>
 </body>
 </html>
