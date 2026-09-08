@@ -1,0 +1,13 @@
+{
+  "name": "@catasophie/cli",
+  "version": "1.0.0",
+  "description": "Thin Node.js CLI wrapper that starts catasophie's install/uninstall/up/down/update/backup/restore/add-app shell scripts.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "catasophie": "./bin/catasophie.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

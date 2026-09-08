@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Scaffolds a new app by copying apps/_template/ to apps/<id>/ and
 # substituting the id in the template files. See docs/ADDING_AN_APP.md.
-# Usage: ./scripts/add-app.sh <app-id> <default-port>
-# Example: ./scripts/add-app.sh radio-sdr 3020
+# Usage: catasophie add-app <app-id> <default-port>
+# Example: catasophie add-app radio-sdr 3020
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 
 id="${1:?usage: add-app.sh <app-id> <default-port>}"
 port="${2:?usage: add-app.sh <app-id> <default-port>}"
@@ -36,4 +36,4 @@ echo "Created $dest. Next steps:"
 echo "  1. Edit $dest/docker-compose.yml with your actual service(s)"
 echo "  2. Edit $dest/install.sh (add any required config prompts)"
 echo "  3. Edit $dest/README.md"
-echo "  4. ./scripts/install.sh (or: $dest/install.sh)"
+echo "  4. catasophie install (or: $dest/install.sh)"

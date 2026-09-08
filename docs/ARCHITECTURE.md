@@ -15,15 +15,13 @@ port(s).
  │                                                                     │
  │   ┌─────────────────────┐   ┌────────────────────┐   ┌─────────┐  │
  │   │ apps/llm-survival    │   │ apps/offline-maps   │   │ apps/…  │  │
- │   │ ollama + webui +     │   │ osrm + tiles +      │   │         │  │
- │   │ kiwix                │   │ geocoder + web       │   │         │  │
- │   │ (own private network)│   │ (own private network)│   │         │  │
+ │   │ ollama + webui +     │   │ tiles + web          │   │         │  │
+ │   │ kiwix                │   │ (routing/geocoder    │   │         │  │
+ │   │ (own private network)│   │  disabled for now)   │   │         │  │
  │   └──────────┬──────────┘   └──────────┬──────────┘   └─────────┘  │
  └──────────────┼──────────────────────────┼──────────────────────────┘
                 │ :3001 (webui)            │ :3010 (web)
-                │ :3002 (kiwix)            │ :3011 (osrm)
-                │                          │ :3012 (tiles)
-                │                          │ :3013 (geocoder)
+                │ :3002 (kiwix)            │ :3012 (tiles)
                 ▼                          ▼
          http://<device-ip>:<port>/  (LAN or localhost)
 ```
@@ -37,7 +35,7 @@ port(s).
 2. Each container publishes its port straight to the host - no routing,
    discovery, or path-rewriting layer in between.
 3. Where a frontend needs to call sibling services (e.g. offline-maps'
-   static page calling its osrm/tiles/geocoder backends), it does so
+   static page calling its tiles backend), it does so
    directly by port, using a small `config.js` rendered from `.env` at
    container start (see `apps/offline-maps/templates/config.js.template`).
 
@@ -59,7 +57,7 @@ port(s).
   calls (e.g. `webui` talking to `ollama`) - there's no cross-app shared
   network, since nothing needs one without a central proxy.
 - **No dynamic lazy-start**: apps are started explicitly via
-  `scripts/up.sh <app-id>` - simpler, at the cost of not auto-starting on
+  `catasophie up <app-id>` - simpler, at the cost of not auto-starting on
   first request.
 
 ## Directory layout

@@ -1,7 +1,7 @@
 # Roadmap
 
 Candidate apps/tools for future phases, roughly in suggested priority
-order. None of these are scaffolded yet - use `scripts/add-app.sh` and
+order. None of these are scaffolded yet - use `catasophie add-app` and
 `docs/ADDING_AN_APP.md` when picking one up.
 
 ## Near-term

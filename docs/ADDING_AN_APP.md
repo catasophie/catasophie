@@ -5,7 +5,8 @@ Compose project, reachable directly on its own published port(s) - no
 shared proxy or network involved.
 
 ```sh
-./scripts/add-app.sh my-tool 8000
+catasophie add-app my-tool 8000
+# or: ./apps/cli/scripts/add-app.sh my-tool 8000
 ```
 
 This copies `apps/_template/` to `apps/my-tool/` and substitutes the id
@@ -17,7 +18,7 @@ env var name from the id).
 
 - **Published port(s)**: publish your service(s) directly on the host,
   with a sensible default that's overridable via `.env` (mirroring the
-  existing apps' convention, e.g. `LLM_WEBUI_PORT`, `MAPS_OSRM_PORT`):
+  existing apps' convention, e.g. `LLM_WEBUI_PORT`, `MAPS_TILES_PORT`):
   ```yaml
   ports:
     - "${MY_TOOL_PORT:-8000}:8000"
@@ -34,7 +35,7 @@ env var name from the id).
   `DATA_DIR=/absolute/path` in the app's `.env` (see
   `apps/_template/install.sh` for the prompt/`ensure_data_dir` pattern).
   Both bind mounts and named volumes are picked up automatically by
-  `scripts/backup.sh`/`restore.sh` - no extra config needed, as long as
+  `catasophie backup`/`restore` - no extra config needed, as long as
   volume names follow the normal top-level `volumes:` convention (see
   `docs/BACKUP_RESTORE.md`).
 - **Multiple services calling each other**: if your app has a frontend
@@ -52,11 +53,11 @@ env var name from the id).
   imports, etc.) - keep heavy setup steps as explicit scripts, not
   something that runs automatically.
 - **.env.example**: if your app needs configuration, provide an
-  `.env.example` in the app folder; `scripts/up.sh` copies it to `.env` on
+  `.env.example` in the app folder; `catasophie up` copies it to `.env` on
   first start if missing.
 - **install.sh**: every app must ship an `install.sh` (this is what
-  `scripts/install.sh`'s wizard calls). Contract:
-  - `source` `scripts/lib/common.sh` for shared helpers
+  `catasophie install`'s wizard calls). Contract:
+  - `source` `apps/cli/scripts/lib/common.sh` for shared helpers
   - `check_deps` at the top
   - `ensure_env_file "$APP_DIR"` then use `prompt_if_unset VAR "prompt text" "default" "$ENV_FILE"`
     for each required setting - it must be a no-op if the variable is
@@ -65,7 +66,7 @@ env var name from the id).
   - use `confirm "question"` before any heavy/slow step (large downloads,
     long-running imports)
   - start the app's containers (`podman-compose -f docker-compose.yml up -d`)
-  - call `mark_installed <app-id>` at the end so `scripts/update.sh` picks
+  - call `mark_installed <app-id>` at the end so `catasophie update` picks
     it up automatically
   - must be safe to re-run (idempotent)
   - for any step that's heavy, externally-fallible, or has multiple
@@ -84,21 +85,27 @@ env var name from the id).
       clears it if rejected, so a revoked/mistyped key gets re-prompted
       instead of silently blocking ingestion forever; `ingest.sh` tracks
       per-file ingestion so a re-run only uploads what's new.
-    - `apps/offline-maps/scripts/import-region.sh` builds its
-      multi-stage OSRM graph and vector tiles into a temporary
-      `.building` location, only moving into the final path after each
-      stage fully succeeds - so "the final file exists" reliably means
-      "this step actually finished", and a crash partway through gets
-      cleanly retried on the next run instead of being mistaken for
-      already done.
+    - `apps/offline-maps/scripts/import-region.sh` builds its vector
+      tiles into a temporary `.building` location, only moving into the
+      final path after the build fully succeeds - so "the final file
+      exists" reliably means "this step actually finished", and a crash
+      partway through gets cleanly retried on the next run instead of
+      being mistaken for already done. It's also a good example of a
+      heavy per-app script that owns its own required-input prompting
+      (`MAP_SOURCE`/`MAP_REGION`/`MAP_SOURCE_URL`, persisted to this
+      app's `.env` via the same `prompt_if_unset`/
+      `prompt_choice_if_unset` helpers) rather than relying on
+      `install.sh` to gather it first - `install.sh` just calls it
+      unconditionally and only prompts for what it itself needs
+      (`DATA_DIR`, ports).
 
   `apps/_template/install.sh` has a working skeleton to copy from -
-  `scripts/add-app.sh` scaffolds it automatically with the id/port
+  `catasophie add-app` scaffolds it automatically with the id/port
   substituted in.
 - **uninstall.sh**: every app must also ship an `uninstall.sh` (called
-  by `scripts/uninstall.sh`'s wizard, and directly runnable per-app).
+  by `catasophie uninstall`'s wizard, and directly runnable per-app).
   Contract:
-  - `source` `scripts/lib/common.sh`, `check_deps` at the top
+  - `source` `apps/cli/scripts/lib/common.sh`, `check_deps` at the top
   - accept `--yes` (skip confirmation), `--keep-data`, `--keep-backups`,
     and `--with-images` flags (see `apps/_template/uninstall.sh`)
   - confirm before doing anything destructive, unless `--yes`
@@ -112,7 +119,7 @@ env var name from the id).
   - must be safe to re-run (no-op on anything already gone)
 
   `apps/_template/uninstall.sh` has a working skeleton to copy from -
-  `scripts/add-app.sh` scaffolds it automatically too.
+  `catasophie add-app` scaffolds it automatically too.
 
 ## Registering it
 
@@ -129,12 +136,12 @@ podman-compose -f apps/my-tool/docker-compose.yml down
 Or via the helper that also handles `.env` bootstrapping:
 
 ```sh
-./scripts/up.sh my-tool
-./scripts/down.sh my-tool
+catasophie up my-tool
+catasophie down my-tool
 ```
 
 Or run its interactive installer directly (also invoked by the root
-wizard, `./scripts/install.sh`):
+wizard, `catasophie install`):
 
 ```sh
 ./apps/my-tool/install.sh

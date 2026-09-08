@@ -2,7 +2,7 @@
 # Shared helpers sourced by root and per-app install/update scripts.
 # Not meant to be executed directly.
 
-CATASOPHIE_ROOT="${CATASOPHIE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+CATASOPHIE_ROOT="${CATASOPHIE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)}"
 INSTALLED_MARKER_FILE="${CATASOPHIE_ROOT}/.installed"
 
 # Fails with a clear message if required tools aren't on PATH, or if the
@@ -10,7 +10,7 @@ INSTALLED_MARKER_FILE="${CATASOPHIE_ROOT}/.installed"
 # associative arrays). macOS ships bash 3.2 by default (a licensing
 # artifact, not a capability limit) - on macOS, install a newer bash via
 # `brew install bash` and either put it ahead of /bin/bash on PATH, or
-# invoke scripts explicitly, e.g. `$(brew --prefix)/bin/bash scripts/install.sh`.
+# invoke bash explicitly, e.g. `$(brew --prefix)/bin/bash apps/cli/scripts/install.sh`.
 check_deps() {
   if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
     echo "error: bash ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]} is too old (need bash 4+)." >&2
@@ -48,15 +48,45 @@ ensure_env_file() {
   touch "$app_dir/.env"
 }
 
+# Sets VAR=value in env_file, updating the existing line in place if
+# present, otherwise appending. Also exports VAR=value into the current
+# shell, so callers don't need to re-source the whole env_file to see
+# it (which would otherwise risk clobbering not-yet-prompted variables
+# still blank in env_file with prompt_if_unset/prompt_choice_if_unset
+# calls still to come). Shared by prompt_if_unset/prompt_choice_if_unset
+# (and safe to call directly).
+# Usage: set_env_var VAR_NAME "value" "path/to/.env"
+set_env_var() {
+  local var_name="$1" value="$2" env_file="$3"
+  if grep -qE "^${var_name}=" "$env_file" 2>/dev/null; then
+    sed -i.bak "s#^${var_name}=.*#${var_name}=${value}#" "$env_file" && rm -f "$env_file.bak"
+  else
+    echo "${var_name}=${value}" >> "$env_file"
+  fi
+  export "${var_name}=${value}"
+}
+
 # Reads VAR from env_file; if unset/empty, prompts interactively (showing
-# a default if given) and appends/updates it in env_file.
+# a default if given) and appends/updates it in env_file. If VAR is
+# already exported in the process environment (e.g. `VAR=x ./script.sh`),
+# that value takes precedence over what's already in env_file and skips
+# the prompt too - it's persisted into env_file so it's remembered next
+# time as well.
 # Usage: prompt_if_unset VAR_NAME "Prompt text" ["default value"] "path/to/.env"
 prompt_if_unset() {
   local var_name="$1" prompt_text="$2" default_value="$3" env_file="$4"
   local current
+
+  if [ -n "${!var_name:-}" ]; then
+    set_env_var "$var_name" "${!var_name}" "$env_file"
+    echo "  ${var_name}=${!var_name} (from environment, skipping prompt)"
+    return 0
+  fi
+
   current=$(grep -E "^${var_name}=" "$env_file" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
 
   if [ -n "$current" ]; then
+    export "${var_name}=${current}"
     echo "  ${var_name} already set (skipping prompt)"
     return 0
   fi
@@ -69,25 +99,31 @@ prompt_if_unset() {
     read -r -p "${prompt_text}: " answer
   fi
 
-  if grep -qE "^${var_name}=" "$env_file" 2>/dev/null; then
-    sed -i.bak "s#^${var_name}=.*#${var_name}=${answer}#" "$env_file" && rm -f "$env_file.bak"
-  else
-    echo "${var_name}=${answer}" >> "$env_file"
-  fi
+  set_env_var "$var_name" "$answer" "$env_file"
 }
 
 # Reads VAR from env_file; if unset/empty, prompts interactively for a
 # single choice from a space-separated list of options (default
 # pre-selected). Uses a whiptail/dialog radiolist when available
 # (falling back to it if the user cancels), otherwise a plain numbered
-# prompt. No-op if VAR is already set - safe to re-run.
+# prompt. No-op if VAR is already set - safe to re-run. If VAR is
+# already exported in the process environment, that value takes
+# precedence and skips the prompt too (see prompt_if_unset).
 # Usage: prompt_choice_if_unset VAR_NAME "Prompt text" "opt1 opt2 opt3" "default_opt" "path/to/.env"
 prompt_choice_if_unset() {
   local var_name="$1" prompt_text="$2" opts_str="$3" default_opt="$4" env_file="$5"
   local current
+
+  if [ -n "${!var_name:-}" ]; then
+    set_env_var "$var_name" "${!var_name}" "$env_file"
+    echo "  ${var_name}=${!var_name} (from environment, skipping prompt)"
+    return 0
+  fi
+
   current=$(grep -E "^${var_name}=" "$env_file" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
 
   if [ -n "$current" ]; then
+    export "${var_name}=${current}"
     echo "  ${var_name} already set (skipping prompt)"
     return 0
   fi
@@ -135,11 +171,7 @@ prompt_choice_if_unset() {
     fi
   fi
 
-  if grep -qE "^${var_name}=" "$env_file" 2>/dev/null; then
-    sed -i.bak "s#^${var_name}=.*#${var_name}=${choice}#" "$env_file" && rm -f "$env_file.bak"
-  else
-    echo "${var_name}=${choice}" >> "$env_file"
-  fi
+  set_env_var "$var_name" "$choice" "$env_file"
   echo "  ${var_name}=${choice}"
 }
 

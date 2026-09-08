@@ -14,8 +14,8 @@
 #   ./uninstall.sh --with-images  # also remove pulled container images
 set -euo pipefail
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../../scripts/lib/common.sh
-source "${APP_DIR}/../../scripts/lib/common.sh"
+# shellcheck source=../cli/scripts/lib/common.sh
+source "${APP_DIR}/../cli/scripts/lib/common.sh"
 
 APP_ID="offline-maps"
 check_deps

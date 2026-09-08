@@ -1,9 +1,7 @@
 // Generated at container start (see docker-compose.yml's "web" service -
 // nginx's built-in envsubst-on-templates entrypoint renders this into
 // config.js) from the actual published ports, so index.html can call
-// each backend directly without a reverse proxy in front.
+// the tiles backend directly without a reverse proxy in front.
 window.MAPS_CONFIG = {
-  osrmPort: "${MAPS_OSRM_PORT}",
-  tilesPort: "${MAPS_TILES_PORT}",
-  geocoderPort: "${MAPS_GEOCODER_PORT}"
+  tilesPort: "${MAPS_TILES_PORT}"
 };

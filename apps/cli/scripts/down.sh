@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Stops the named app(s).
 # Usage:
-#   ./scripts/down.sh llm-survival offline-maps
+#   catasophie down llm-survival offline-maps
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 
 if [ "$#" -eq 0 ]; then
   echo "usage: $0 <app-id> [app-id...]" >&2

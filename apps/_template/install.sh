@@ -2,8 +2,8 @@
 # Interactive installer for __APP_ID__. Idempotent - safe to re-run.
 set -euo pipefail
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../../scripts/lib/common.sh
-source "${APP_DIR}/../../scripts/lib/common.sh"
+# shellcheck source=../cli/scripts/lib/common.sh
+source "${APP_DIR}/../cli/scripts/lib/common.sh"
 
 echo "== __APP_ID__ install =="
 check_deps
@@ -20,9 +20,6 @@ prompt_if_unset DATA_DIR \
 prompt_if_unset __PORT_VAR__ \
   "Port to publish __APP_ID__ on (http://localhost:<port>/)" \
   "__PORT__" "$ENV_FILE"
-
-# shellcheck disable=SC1090
-set -a; source "$ENV_FILE"; set +a
 
 data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1

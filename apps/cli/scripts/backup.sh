@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Backs up app data (bind-mounted ./data + named podman volumes) and
-# .env files, so it can be rolled back to via scripts/restore.sh. Used
-# automatically by scripts/update.sh before each update.
+# .env files, so it can be rolled back to via `catasophie restore`. Used
+# automatically by `catasophie update` before each update.
 #
 # Usage:
-#   ./scripts/backup.sh                    # backs up every installed app
-#   ./scripts/backup.sh llm-survival        # just one app
-#   ./scripts/backup.sh --keep 3 offline-maps
+#   catasophie backup                    # backs up every installed app
+#   catasophie backup llm-survival        # just one app
+#   catasophie backup offline-maps --keep 3
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
-# shellcheck source=lib/common.sh
-source "scripts/lib/common.sh"
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
+# shellcheck source=apps/cli/scripts/lib/common.sh
+source "apps/cli/scripts/lib/common.sh"
 
 check_deps
 

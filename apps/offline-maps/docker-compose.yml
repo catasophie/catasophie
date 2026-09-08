@@ -1,17 +1,12 @@
-# Offline maps + basic navigation.
+# Offline maps (tiles only - routing/geocoding disabled for now to
+# keep the install slim; see git history for the osrm/geocoder setup).
 #
 # Services:
-#   - osrm:       routing engine (car profile), serves /route requests
-#                 against a pre-built graph for ${MAP_REGION} - published
-#                 on http://localhost:${MAPS_OSRM_PORT:-3011}/
 #   - tiles:      tileserver-gl serving a pre-built .mbtiles for the region -
 #                 published on http://localhost:${MAPS_TILES_PORT:-3012}/
-#   - geocoder:   Photon (offline address search) built from the same
-#                 region extract - published on
-#                 http://localhost:${MAPS_GEOCODER_PORT:-3013}/
-#   - web:        static MapLibre GL frontend (search + draw route),
+#   - web:        static MapLibre GL frontend (pans to your location),
 #                 published on http://localhost:${MAPS_WEB_PORT:-3010}/ -
-#                 calls the three services above directly by port (see
+#                 calls the tiles service directly by port (see
 #                 templates/config.js.template)
 #
 # Run scripts/import-region.sh once (with MAP_REGION set in .env) before
@@ -21,15 +16,6 @@
 # this app's .env.
 
 services:
-  osrm:
-    image: docker.io/osrm/osrm-backend:latest
-    command: ["osrm-routed", "--algorithm", "mld", "/data/region.osrm"]
-    volumes:
-      - ${DATA_DIR:-./data}/osrm:/data
-    ports:
-      - "${MAPS_OSRM_PORT:-3011}:5000"
-    restart: unless-stopped
-
   tiles:
     image: docker.io/maptiler/tileserver-gl:latest
     command: ["--config", "/data/config.json"]
@@ -39,14 +25,6 @@ services:
       - "${MAPS_TILES_PORT:-3012}:8080"
     restart: unless-stopped
 
-  geocoder:
-    image: docker.io/rtuszik/photon-docker:latest
-    volumes:
-      - ${DATA_DIR:-./data}/photon:/photon/data
-    ports:
-      - "${MAPS_GEOCODER_PORT:-3013}:2322"
-    restart: unless-stopped
-
   web:
     image: docker.io/library/nginx:1.27-alpine
     environment:
@@ -54,9 +32,7 @@ services:
       # renders templates/config.js.template (mounted below) into
       # config.js using these - no custom entrypoint script needed.
       - NGINX_ENVSUBST_OUTPUT_DIR=/usr/share/nginx/html
-      - MAPS_OSRM_PORT=${MAPS_OSRM_PORT:-3011}
       - MAPS_TILES_PORT=${MAPS_TILES_PORT:-3012}
-      - MAPS_GEOCODER_PORT=${MAPS_GEOCODER_PORT:-3013}
     volumes:
       - ./web:/usr/share/nginx/html
       - ./templates/config.js.template:/etc/nginx/templates/config.js.template:ro

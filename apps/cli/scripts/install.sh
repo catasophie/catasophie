@@ -4,9 +4,9 @@
 # install.sh contract). Each app is fully independent and reachable
 # directly on its own published port(s) - no shared proxy involved.
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
-# shellcheck source=lib/common.sh
-source "scripts/lib/common.sh"
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
+# shellcheck source=apps/cli/scripts/lib/common.sh
+source "apps/cli/scripts/lib/common.sh"
 
 check_deps
 

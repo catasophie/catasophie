@@ -2,14 +2,14 @@
 
 ## What gets backed up
 
-For each app, `scripts/backup.sh` captures:
+For each app, `catasophie backup` captures:
 
 - `.env` - the app's configuration
 - data dir - wherever `DATA_DIR` in the app's `.env` currently points
   (`./data` next to the app if unset - e.g. an external drive mount if
   set), tarred as `data.tar.gz`. For `offline-maps`, `raw/` (the source
   `.osm.pbf` extract) is excluded by default - it's several hundred
-  MB-GB and trivially re-downloadable via `scripts/import-region.sh`, so
+  MB-GB and trivially re-downloadable via `apps/offline-maps/scripts/import-region.sh`, so
   it isn't worth including in every backup.
 - Named Podman volumes declared in the app's `docker-compose.yml`,
   exported via `podman volume export` - one `volume__<name>.tar` file
@@ -30,13 +30,13 @@ with `--keep N`.
 ## Manual usage
 
 ```sh
-./scripts/backup.sh                       # back up every installed app
-./scripts/backup.sh llm-survival           # just one app
-./scripts/backup.sh --keep 3 offline-maps  # override retention
+catasophie backup                       # back up every installed app
+catasophie backup llm-survival           # just one app
+catasophie backup offline-maps --keep 3  # override retention
 
-./scripts/restore.sh llm-survival                    # restore latest backup (asks to confirm)
-./scripts/restore.sh llm-survival 2026-09-07T20-30-00Z  # restore a specific timestamp
-./scripts/restore.sh offline-maps latest --yes        # skip confirmation
+catasophie restore llm-survival                    # restore latest backup (asks to confirm)
+catasophie restore llm-survival 2026-09-07T20-30-00Z  # restore a specific timestamp
+catasophie restore offline-maps latest --yes        # skip confirmation
 ```
 
 `restore.sh` stops the app, replaces `.env`/data/volumes from the
@@ -52,7 +52,7 @@ restoring).
 
 ## Automatic backup + rollback during updates
 
-`scripts/update.sh` wraps every app update with:
+`catasophie update` wraps every app update with:
 
 1. **Backup** - `backup_app` before touching anything (skip with `--no-backup`, not recommended)
 2. **Image snapshot** - records the currently-running image ID for each service
@@ -71,9 +71,9 @@ still get updated, and failures are summarized at the
 end. Pass `--stop-on-failure` to abort immediately instead.
 
 ```sh
-./scripts/update.sh                    # update everything installed, with backup+rollback
-./scripts/update.sh llm-survival        # just this app
-./scripts/update.sh --stop-on-failure
+catasophie update                    # update everything installed, with backup+rollback
+catasophie update llm-survival        # just this app
+catasophie update --stop-on-failure
 ```
 
 ## Notes / limitations

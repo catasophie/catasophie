@@ -5,22 +5,22 @@
 # happens to record - that marker can be stale, e.g. if install.sh
 # crashed before reaching mark_installed) plus backups/ and the
 # .installed marker - restoring the repo to its state before
-# scripts/install.sh was ever run.
+# catasophie install was ever run.
 #
 # Destructive - asks for confirmation unless --yes is passed.
 #
 # Usage:
-#   ./scripts/uninstall.sh                       # everything (full reset)
-#   ./scripts/uninstall.sh llm-survival           # just one app
-#   ./scripts/uninstall.sh llm-survival offline-maps
-#   ./scripts/uninstall.sh --yes                  # skip confirmation
-#   ./scripts/uninstall.sh --keep-data            # keep data directories
-#   ./scripts/uninstall.sh --keep-backups         # keep backups/
-#   ./scripts/uninstall.sh --with-images          # also remove pulled images
+#   catasophie uninstall                       # everything (full reset)
+#   catasophie uninstall llm-survival           # just one app
+#   catasophie uninstall llm-survival offline-maps
+#   catasophie uninstall --yes                  # skip confirmation
+#   catasophie uninstall --keep-data            # keep data directories
+#   catasophie uninstall --keep-backups         # keep backups/
+#   catasophie uninstall --with-images          # also remove pulled images
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
-# shellcheck source=lib/common.sh
-source "scripts/lib/common.sh"
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
+# shellcheck source=apps/cli/scripts/lib/common.sh
+source "apps/cli/scripts/lib/common.sh"
 
 check_deps
 

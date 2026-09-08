@@ -7,115 +7,47 @@
   <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
   <style>
     html, body, #map { height: 100%; margin: 0; }
-    #panel {
-      position: absolute; top: 0.75rem; left: 0.75rem; z-index: 1;
-      background: rgba(20,23,26,0.92); color: #eee; padding: 0.75rem;
-      border-radius: 8px; font-family: system-ui, sans-serif; width: 280px;
-    }
-    #panel input { width: 100%; box-sizing: border-box; margin: 0.25rem 0; padding: 0.4rem; }
-    #panel button { width: 100%; padding: 0.5rem; margin-top: 0.25rem; cursor: pointer; }
-    #results { max-height: 6rem; overflow-y: auto; font-size: 0.85rem; }
-    #results div { padding: 0.25rem; cursor: pointer; border-bottom: 1px solid #333; }
-    #results div:hover { background: #222; }
   </style>
 </head>
 <body>
-  <div id="panel">
-    <input id="from" placeholder="From (search or click map)">
-    <div id="from-results" class="results"></div>
-    <input id="to" placeholder="To (search or click map)">
-    <div id="to-results" class="results"></div>
-    <button id="route-btn">Route</button>
-  </div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
   <script src="config.js"></script>
   <script>
-    // No reverse proxy in front - osrm/tiles/geocoder are each published
-    // directly on their own host port (see docker-compose.yml /
-    // .env). config.js (rendered from those ports at container start,
-    // see templates/config.js.template) tells us which.
+    // No reverse proxy in front - tiles is published directly on its
+    // own host port (see docker-compose.yml / .env). config.js
+    // (rendered from that port at container start, see
+    // templates/config.js.template) tells us which.
     const cfg = window.MAPS_CONFIG || {};
-    const osrmBase = `http://${location.hostname}:${cfg.osrmPort}`;
     const tilesBase = `http://${location.hostname}:${cfg.tilesPort}`;
-    const geocoderBase = `http://${location.hostname}:${cfg.geocoderPort}`;
-    let points = { from: null, to: null };
 
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: {
-        version: 8,
-        sources: {
-          offline: {
-            type: 'vector',
-            tiles: [`${tilesBase}/data/{z}/{x}/{y}.pbf`],
-            minzoom: 0, maxzoom: 14
-          }
-        },
-        // Minimal style - replace with a full style.json matching your
-        // Planetiler layer schema for proper rendering.
-        layers: [
-          { id: 'background', type: 'background', paint: { 'background-color': '#0e1013' } },
-          { id: 'water', type: 'fill', source: 'offline', 'source-layer': 'water', paint: { 'fill-color': '#1a2a3a' } },
-          { id: 'roads', type: 'line', source: 'offline', 'source-layer': 'transportation', paint: { 'line-color': '#666', 'line-width': 1 } }
-        ]
-      },
-      center: [0, 0],
-      zoom: 2
-    });
-
-    let routeMarkers = [];
-    function setMarker(kind, lngLat) {
-      routeMarkers.forEach(m => { if (m.kind === kind) m.marker.remove(); });
-      routeMarkers = routeMarkers.filter(m => m.kind !== kind);
-      const marker = new maplibregl.Marker({ color: kind === 'from' ? '#2ecc71' : '#e74c3c' })
-        .setLngLat(lngLat).addTo(map);
-      routeMarkers.push({ kind, marker });
-      points[kind] = lngLat;
-    }
-
-    map.on('click', (e) => {
-      const kind = points.from ? 'to' : 'from';
-      setMarker(kind, [e.lngLat.lng, e.lngLat.lat]);
-    });
-
-    async function search(query, resultsEl, kind) {
-      resultsEl.innerHTML = '';
-      if (!query) return;
-      const res = await fetch(`${geocoderBase}/api?q=${encodeURIComponent(query)}&limit=5`);
-      if (!res.ok) return;
-      const data = await res.json();
-      (data.features || []).forEach((f) => {
-        const div = document.createElement('div');
-        div.textContent = f.properties.name || f.properties.osm_value || 'unnamed';
-        div.onclick = () => setMarker(kind, f.geometry.coordinates);
-        resultsEl.appendChild(div);
+    const init = async () => {
+      const styleRequest = await fetch(`${tilesBase}/styles/basic-preview/style.json`);
+      const style = await styleRequest.json();
+      const map = new maplibregl.Map({
+        container: 'map',
+        style,
+        center: [0, 0],
+        zoom: 2
       });
-    }
 
-    document.getElementById('from').addEventListener('input', (e) =>
-      search(e.target.value, document.getElementById('from-results'), 'from'));
-    document.getElementById('to').addEventListener('input', (e) =>
-      search(e.target.value, document.getElementById('to-results'), 'to'));
+      map.addControl(new maplibregl.NavigationControl());
 
-    document.getElementById('route-btn').addEventListener('click', async () => {
-      if (!points.from || !points.to) { alert('Pick both a start and end point'); return; }
-      const coords = `${points.from.join(',')};${points.to.join(',')}`;
-      const res = await fetch(`${osrmBase}/route/v1/driving/${coords}?overview=full&geometries=geojson`);
-      if (!res.ok) { alert('Routing failed'); return; }
-      const data = await res.json();
-      const geometry = data.routes[0].geometry;
-      if (map.getSource('route')) {
-        map.getSource('route').setData({ type: 'Feature', geometry });
-      } else {
-        map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry } });
-        map.addLayer({ id: 'route', type: 'line', source: 'route', paint: { 'line-color': '#3498db', 'line-width': 4 } });
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            map.jumpTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 13 });
+          },
+          (err) => {
+            console.warn('Geolocation unavailable:', err.message);
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
       }
-      const bounds = geometry.coordinates.reduce(
-        (b, c) => b.extend(c), new maplibregl.LngLatBounds(geometry.coordinates[0], geometry.coordinates[0]));
-      map.fitBounds(bounds, { padding: 40 });
-    });
+    };
+
+    init();
   </script>
 </body>
 </html>
