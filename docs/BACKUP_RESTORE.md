@@ -14,7 +14,7 @@ For each app, `make backup` captures:
 - Named Podman volumes declared in the app's `docker-compose.yml`,
   exported via `podman volume export` - one `volume__<name>.tar` file
   per volume (not currently used by any bundled app - both
-  `llm-survival` and `offline-maps` use `DATA_DIR`-driven bind mounts
+  `wikimed` and `offline-maps` use `DATA_DIR`-driven bind mounts
   instead, precisely so their data can live on an external drive).
 
 Backups are written to `backups/<app-id>/<timestamp>/` and are entirely
@@ -31,11 +31,11 @@ with `--keep N`.
 
 ```sh
 make backup                             # back up every installed app
-make backup ARGS="llm-survival"         # just one app
+make backup ARGS="wikimed"              # just one app
 make backup ARGS="offline-maps --keep 3"  # override retention
 
-make restore ARGS="llm-survival"                    # restore latest backup (asks to confirm)
-make restore ARGS="llm-survival 2026-09-07T20-30-00Z"  # restore a specific timestamp
+make restore ARGS="wikimed"                         # restore latest backup (asks to confirm)
+make restore ARGS="wikimed 2026-09-07T20-30-00Z"     # restore a specific timestamp
 make restore ARGS="offline-maps latest --yes"        # skip confirmation
 ```
 
@@ -72,7 +72,7 @@ end. Pass `--stop-on-failure` to abort immediately instead.
 
 ```sh
 make update                          # update everything installed, with backup+rollback
-make update ARGS="llm-survival"       # just this app
+make update ARGS="wikimed"            # just this app
 make update ARGS="--stop-on-failure"
 ```
 

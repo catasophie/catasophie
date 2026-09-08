@@ -81,11 +81,6 @@ name from the id, e.g. `MY_TOOL_PORT` for `my-tool`).
     directory have anything in it" check, which can't tell a fully
     finished step from one that crashed partway through. Two real
     examples in this repo:
-    - `apps/llm-survival/install.sh` re-validates `OPEN_WEBUI_API_KEY`
-      with a live API call on every run (not just "is it non-empty") and
-      clears it if rejected, so a revoked/mistyped key gets re-prompted
-      instead of silently blocking ingestion forever; `ingest.sh` tracks
-      per-file ingestion so a re-run only uploads what's new.
     - `apps/offline-maps/scripts/import-region.sh` builds its vector
       tiles into a temporary `.building` location, only moving into the
       final path after the build fully succeeds - so "the final file
@@ -99,6 +94,13 @@ name from the id, e.g. `MY_TOOL_PORT` for `my-tool`).
       `install.sh` to gather it first - `install.sh` just calls it
       unconditionally and only prompts for what it itself needs
       (`DATA_DIR`, ports).
+    - `apps/wikimed/scripts/download-zim.sh` downloads one or more
+      selectable ZIM files (via `prompt_multi_choice_if_unset` - a
+      toggleable checklist) into stable, per-item filenames
+      (`data/zims/<key>.zim`) with the same temp-file-then-atomic-move
+      pattern, so each item's completion is independently tracked by
+      "does its final file exist" - re-running only fetches what's
+      still missing, e.g. after adding a new key to `WIKIMED_ZIMS`.
 
   `apps/_template/install.sh` has a working skeleton to copy from -
   `make add-app` scaffolds it automatically with the id/port
@@ -162,3 +164,54 @@ wizard, `make install`):
 ```sh
 ./apps/my-tool/install.sh
 ```
+
+## Testing your app
+
+Before considering an app (or a change to one) done, verify it
+actually works - don't just trust that `podman-compose up -d` exited 0.
+A container can report success on `up -d` and then immediately crash
+loop or exit clean while still being completely non-functional:
+
+1. **Validate the compose file**:
+   ```sh
+   podman-compose -f apps/my-tool/docker-compose.yml config
+   ```
+   Catches YAML/interpolation mistakes before anything even starts.
+2. **Start it and check it's actually still running** a few seconds
+   later, not just that the initial command succeeded:
+   ```sh
+   podman-compose -f apps/my-tool/docker-compose.yml up -d
+   sleep 5
+   podman ps -a --filter "label=io.podman.compose.project=my-tool"
+   ```
+   Every container should show `Up`, not `Exited` (even `Exited (0)` -
+   a clean exit code doesn't mean the service is working, just that it
+   didn't crash loudly).
+3. **Check the logs** for each service, especially the first few lines
+   right after start - this is where entrypoint scripts print the
+   actual command they ended up running:
+   ```sh
+   podman logs <container-name>
+   ```
+   Watch out for images whose entrypoint/start script already injects
+   its own CLI flags (e.g. `kiwix-serve`'s Docker image auto-adds
+   `--port=$PORT` itself) - passing the same flag again in your
+   `command:` can produce a duplicate-flag error that silently kills
+   the container. Read the image's actual entrypoint/start script
+   source (not just a `docker run` example from its README) before
+   assuming which flags are safe to pass yourself.
+4. **Actually hit the published port**, don't just check the process is
+   up - a container can be "running" while its HTTP server isn't
+   listening yet, crashed internally, or is serving an error page:
+   ```sh
+   curl -sS -o /dev/null -w "HTTP %{http_code}\n" http://localhost:<port>/
+   ```
+   For anything content-driven (serving files, a database, etc.),
+   spot-check that the actual expected content comes back, not just a
+   200 status.
+5. **Re-run `install.sh`/`up.sh`** a second time and confirm nothing
+   breaks or re-prompts for already-answered config - idempotency is
+   part of the contract (see above).
+6. Clean up after manual testing (`./apps/my-tool/down.sh`, or
+   `./apps/my-tool/uninstall.sh --yes` if you want a full reset) so you
+   don't leave stray containers/data behind.

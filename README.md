@@ -7,11 +7,18 @@ its own published port - no reverse proxy or shared network involved.
 
 ## Status
 
-First version: an offline LLM assistant with a curated survival/medical
-reference corpus (`apps/llm-survival`), and offline maps with basic
-driving navigation (`apps/offline-maps`). See `docs/ROADMAP.md` for other
-apps worth adding next (offline encyclopedia, mesh comms, SDR radio
-monitor, inventory tracker, ...).
+Currently implemented:
+
+- **`apps/offline-maps`** - offline map viewing with basic driving
+  navigation, entirely from locally stored OpenStreetMap data.
+- **`apps/wikimed`** - offline medical/survival reference content
+  (Kiwix), defaulting to a compact offline survival medicine guide, with
+  an extensible catalog of additional ZIMs (emergency medicine, water
+  safety, food preparation, knots, the full WikiMed medical
+  encyclopedia, ...).
+
+See `docs/ROADMAP.md` for other apps worth adding next (an offline LLM
+assistant, mesh comms, SDR radio monitor, inventory tracker, ...).
 
 ## Quick start
 
@@ -64,6 +71,7 @@ visit, e.g. `http://localhost:3010/` for `offline-maps`'s web UI, or
 app's own README for its full list of ports:
 
 - [`apps/offline-maps/README.md`](apps/offline-maps/README.md)
+- [`apps/wikimed/README.md`](apps/wikimed/README.md)
 
 Stop an app with `./apps/<app-id>/down.sh` (start it again with
 `./apps/<app-id>/up.sh`) - each app is started/stopped individually,
@@ -94,12 +102,12 @@ directly to remove just that app without touching anything else.
 ## Storing data on an external drive
 
 Each app's installer prompts for `DATA_DIR` - leave it blank to keep
-data (ollama models, webui data, kiwix, map tiles/routing graphs, etc.)
-in `./data` next to the app, or set it to an absolute path to store it
+data (ZIM files, map tiles/routing graphs, model weights, etc.) in
+`./data` next to the app, or set it to an absolute path to store it
 elsewhere, e.g. a USB/external drive mounted at `/mnt/external`:
 
 ```
-DATA_DIR=/mnt/external/catasophie/llm-survival
+DATA_DIR=/mnt/external/catasophie/wikimed
 ```
 
 Create the base folder on the drive (e.g. `mkdir -p
@@ -134,6 +142,7 @@ catasophie/
 │   ├── offline-maps/       # offline maps + basic navigation
 │   │   ├── install.sh / uninstall.sh  # per-app install/uninstall
 │   │   └── up.sh / down.sh            # per-app start/stop (run directly)
+│   ├── wikimed/            # offline medical/survival reference content (Kiwix)
 │   ├── _template/          # copy this (via `make add-app`) to scaffold a new app
 │   └── cli/                # shell scripts driving install/uninstall/update/backup/restore
 │       └── scripts/
@@ -143,6 +152,7 @@ catasophie/
 │           ├── backup.sh / restore.sh # manual backup + restore (data/volumes/.env)
 │           ├── add-app.sh             # scaffold a new app from _template
 │           └── lib/common.sh          # shared install/backup/restore helpers
+├── AGENTS.md
 └── docs/
     ├── ARCHITECTURE.md
     ├── ADDING_AN_APP.md
@@ -166,3 +176,4 @@ data directory, install/uninstall scripts).
 - `docs/ADDING_AN_APP.md` - the app contract (ports, data, install/uninstall)
 - `docs/BACKUP_RESTORE.md` - backup/restore + automatic update rollback
 - `docs/ROADMAP.md` - candidate future apps/tools
+- `AGENTS.md` - instructions for AI coding agents working in this repo
