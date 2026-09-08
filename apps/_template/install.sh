@@ -13,6 +13,16 @@ ENV_FILE="${APP_DIR}/.env"
 # Example - replace with your app's actual required configuration:
 # prompt_if_unset SOME_SETTING "Describe what this is for" "default-value" "$ENV_FILE"
 
+prompt_if_unset DATA_DIR \
+  "Directory for persistent data (blank = ./data here, or an absolute path e.g. an external drive mount)" \
+  "" "$ENV_FILE"
+
+# shellcheck disable=SC1090
+set -a; source "$ENV_FILE"; set +a
+
+data_dir="${DATA_DIR:-${APP_DIR}/data}"
+ensure_data_dir "$data_dir" || exit 1
+
 echo "Starting __APP_ID__..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d
 

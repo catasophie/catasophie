@@ -5,14 +5,36 @@
 CATASOPHIE_ROOT="${CATASOPHIE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 INSTALLED_MARKER_FILE="${CATASOPHIE_ROOT}/.installed"
 
-# Fails with a clear message if required tools aren't on PATH.
+# Fails with a clear message if required tools aren't on PATH, or if the
+# running bash is too old. These scripts use bash 4+ features (mapfile,
+# associative arrays). macOS ships bash 3.2 by default (a licensing
+# artifact, not a capability limit) - on macOS, install a newer bash via
+# `brew install bash` and either put it ahead of /bin/bash on PATH, or
+# invoke scripts explicitly, e.g. `$(brew --prefix)/bin/bash scripts/install.sh`.
 check_deps() {
+  if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+    echo "error: bash ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]} is too old (need bash 4+)." >&2
+    if [ "$(uname -s)" = "Darwin" ]; then
+      echo "  macOS ships bash 3.2 at /bin/bash. Install a newer one and re-run with it:" >&2
+      echo "    brew install bash" >&2
+      echo "    \$(brew --prefix)/bin/bash $0 $*" >&2
+    else
+      echo "  Install a newer bash (4+) via your distro's package manager." >&2
+    fi
+    exit 1
+  fi
+
   local missing=()
   command -v podman >/dev/null 2>&1 || missing+=("podman")
   command -v podman-compose >/dev/null 2>&1 || missing+=("podman-compose")
   if [ "${#missing[@]}" -gt 0 ]; then
     echo "error: missing required tool(s): ${missing[*]}" >&2
-    echo "See https://podman.io/docs/installation and https://github.com/containers/podman-compose" >&2
+    if [ "$(uname -s)" = "Darwin" ]; then
+      echo "  On macOS: brew install podman podman-compose" >&2
+      echo "  Then one-time setup: podman machine init && podman machine start" >&2
+    else
+      echo "See https://podman.io/docs/installation and https://github.com/containers/podman-compose" >&2
+    fi
     exit 1
   fi
 }
@@ -66,8 +88,9 @@ confirm() {
 }
 
 # Detects the podman API socket path (preferring the rootless per-user
-# socket) and writes it into the root .env if PODMAN_SOCK isn't already
-# set there. Traefik needs this to watch containers via labels.
+# socket on Linux, or the podman-machine VM socket on macOS) and writes
+# it into the root .env if PODMAN_SOCK isn't already set there. Traefik
+# needs this to watch containers via labels.
 ensure_podman_sock() {
   local env_file="${CATASOPHIE_ROOT}/.env"
   touch "$env_file"
@@ -77,17 +100,29 @@ ensure_podman_sock() {
     return 0
   fi
 
+  # Works on both platforms: podman itself resolves the right socket,
+  # including the VM-forwarded one on macOS (podman machine).
   local sock=""
   if command -v podman >/dev/null 2>&1; then
     sock=$(podman info --format '{{.Host.RemoteSocket.Path}}' 2>/dev/null || true)
   fi
+
   if [ -z "$sock" ] || [ ! -S "$sock" ]; then
-    sock="/run/user/$(id -u)/podman/podman.sock"
+    if [ "$(uname -s)" = "Darwin" ]; then
+      # Fallback for macOS: ask the active podman machine directly.
+      sock=$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null || true)
+    else
+      sock="/run/user/$(id -u)/podman/podman.sock"
+    fi
   fi
 
-  if [ ! -S "$sock" ]; then
-    echo "warn: podman socket not found/active at $sock" >&2
-    echo "  enable it with: systemctl --user enable --now podman.socket" >&2
+  if [ -z "$sock" ] || [ ! -S "$sock" ]; then
+    echo "warn: podman socket not found/active at ${sock:-<unknown>}" >&2
+    if [ "$(uname -s)" = "Darwin" ]; then
+      echo "  start it with: podman machine init (if needed) && podman machine start" >&2
+    else
+      echo "  enable it with: systemctl --user enable --now podman.socket" >&2
+    fi
   fi
 
   if grep -qE "^PODMAN_SOCK=" "$env_file" 2>/dev/null; then
@@ -176,6 +211,48 @@ _app_dir_for() {
   fi
 }
 
+# Resolves the app's actual data directory: reads DATA_DIR from the
+# app's .env if set (see ensure_data_dir/DATA_DIR convention - lets data
+# live on an external drive), otherwise falls back to <app_dir>/data -
+# mirroring the `${DATA_DIR:-./data}` default used in docker-compose.yml
+# bind mounts.
+_data_dir_for() {
+  local app_id="$1"
+  local app_dir; app_dir=$(_app_dir_for "$app_id")
+  local env_file="${app_dir}/.env"
+  local configured=""
+  if [ -f "$env_file" ]; then
+    configured=$(grep -E '^DATA_DIR=' "$env_file" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
+  fi
+  if [ -n "$configured" ]; then
+    echo "$configured"
+  else
+    echo "${app_dir}/data"
+  fi
+}
+
+# Creates the given data directory if missing. If it's an absolute path
+# (i.e. explicitly redirected via DATA_DIR, presumably to an external
+# drive) whose parent doesn't already exist, refuses to create it - this
+# avoids silently creating a stray folder on the boot disk if the
+# external drive isn't mounted yet. Relative paths (the default, under
+# the app dir) are always created outright.
+ensure_data_dir() {
+  local dir="$1"
+  [ -d "$dir" ] && return 0
+  case "$dir" in
+    /*)
+      local parent; parent=$(dirname "$dir")
+      if [ ! -d "$parent" ]; then
+        echo "error: DATA_DIR parent '${parent}' doesn't exist - is the external drive mounted?" >&2
+        echo "  create the base folder on the drive first, then re-run this installer." >&2
+        return 1
+      fi
+      ;;
+  esac
+  mkdir -p "$dir"
+}
+
 # podman-compose's project name (used in container labels) defaults to
 # the compose file's directory name - "catasophie" for the root stack,
 # not the pseudo-id "_root" used elsewhere in this file.
@@ -188,27 +265,31 @@ _project_name_for() {
   fi
 }
 
-# Backs up one app's (or "_root"'s) .env, bind-mounted data/, and named
-# volumes into dest_dir. For offline-maps specifically, data/raw/ (the
-# source OSM extract, re-downloadable via import-region.sh) is excluded
-# to keep backups smaller/faster.
+# Backs up one app's (or "_root"'s) .env, data dir (wherever DATA_DIR
+# currently points - see _data_dir_for), and named volumes into dest_dir.
+# For offline-maps specifically, raw/ (the source OSM extract,
+# re-downloadable via import-region.sh) is excluded to keep backups
+# smaller/faster.
 backup_app() {
   local app_id="$1" dest_dir="$2"
   local app_dir; app_dir=$(_app_dir_for "$app_id")
   local project; project=$(_project_name_for "$app_id")
+  local data_dir; data_dir=$(_data_dir_for "$app_id")
   mkdir -p "$dest_dir"
 
   if [ -f "${app_dir}/.env" ]; then
     cp "${app_dir}/.env" "${dest_dir}/.env"
   fi
 
-  if [ -d "${app_dir}/data" ]; then
-    echo "  backing up ${app_id}/data/ ..."
+  if [ -d "$data_dir" ]; then
+    echo "  backing up ${app_id} data (${data_dir}) ..."
     local tar_excludes=()
     if [ "$app_id" = "offline-maps" ]; then
-      tar_excludes+=(--exclude="data/raw")
+      tar_excludes+=(--exclude="./raw")
     fi
-    tar czf "${dest_dir}/data.tar.gz" "${tar_excludes[@]}" -C "$app_dir" data
+    tar czf "${dest_dir}/data.tar.gz" "${tar_excludes[@]}" -C "$data_dir" .
+  else
+    echo "  warn: data dir '${data_dir}' not found for ${app_id} - is an external drive unmounted? skipping data backup" >&2
   fi
 
   local vol
@@ -254,9 +335,12 @@ resolve_backup_dir() {
   fi
 }
 
-# Restores an app's .env, data/, and named volumes from a backup dir,
-# stopping/starting the app's containers around the restore. Set
-# ASSUME_YES=1 to skip the confirmation prompt.
+# Restores an app's .env, data dir, and named volumes from a backup
+# dir, stopping/starting the app's containers around the restore. Set
+# ASSUME_YES=1 to skip the confirmation prompt. Note: .env is restored
+# first, so if DATA_DIR differs between the backup and the current
+# .env, data is restored to wherever the *restored* .env's DATA_DIR
+# points (external drive must already be mounted there).
 restore_app() {
   local app_id="$1" backup_dir="$2"
   local app_dir; app_dir=$(_app_dir_for "$app_id")
@@ -268,10 +352,12 @@ restore_app() {
     return 1
   fi
 
+  local data_dir; data_dir=$(_data_dir_for "$app_id")
+
   if [ "${ASSUME_YES:-0}" != "1" ]; then
     echo "About to restore ${app_id} from ${backup_dir}:"
     [ -f "${backup_dir}/.env" ] && echo "  - .env will be overwritten"
-    [ -f "${backup_dir}/data.tar.gz" ] && echo "  - ${app_dir}/data/ will be replaced"
+    [ -f "${backup_dir}/data.tar.gz" ] && echo "  - ${data_dir}/ will be replaced"
     for f in "${backup_dir}"/volume__*.tar; do
       [ -e "$f" ] || continue
       echo "  - volume $(basename "$f" .tar | sed 's/^volume__//') will be replaced"
@@ -288,12 +374,16 @@ restore_app() {
 
   if [ -f "${backup_dir}/.env" ]; then
     cp "${backup_dir}/.env" "${app_dir}/.env"
+    # DATA_DIR may have changed in the restored .env - re-resolve.
+    data_dir=$(_data_dir_for "$app_id")
   fi
 
   if [ -f "${backup_dir}/data.tar.gz" ]; then
-    echo "  restoring data/ ..."
-    rm -rf "${app_dir}/data"
-    tar xzf "${backup_dir}/data.tar.gz" -C "$app_dir"
+    echo "  restoring data (${data_dir}) ..."
+    ensure_data_dir "$data_dir" || return 1
+    rm -rf "${data_dir:?}"
+    mkdir -p "$data_dir"
+    tar xzf "${backup_dir}/data.tar.gz" -C "$data_dir"
   fi
 
   local f vol_short vol_full

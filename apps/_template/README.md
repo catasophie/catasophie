@@ -12,4 +12,5 @@ Then visit `http://catasophie.local__URL_PATH__`.
 
 ## Data
 
-Persistent data lives in `./data/` (gitignored).
+Persistent data lives in `./data/` (gitignored), or wherever `DATA_DIR`
+in `.env` points (e.g. an external drive) - see `install.sh`.

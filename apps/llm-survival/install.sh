@@ -16,16 +16,23 @@ prompt_if_unset OLLAMA_MODEL \
   "Ollama model tag (small: phi3:mini/llama3.2:3b, bigger: llama3.1:8b/gemma2:9b)" \
   "llama3.2:3b" "$ENV_FILE"
 
+prompt_if_unset DATA_DIR \
+  "Directory for persistent data - ollama models, webui data, kiwix (blank = ./data here, or an absolute path e.g. an external drive mount)" \
+  "" "$ENV_FILE"
+
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
+
+data_dir="${DATA_DIR:-${APP_DIR}/data}"
+ensure_data_dir "$data_dir" || exit 1
 
 # kiwix-serve needs a valid library.xml to start at all; seed an empty one
 # so it comes up cleanly (serving zero books) instead of crash-looping
 # until corpus/fetch.sh adds a real ZIM to it.
-mkdir -p "${APP_DIR}/data/kiwix"
-if [ ! -f "${APP_DIR}/data/kiwix/library.xml" ]; then
+mkdir -p "${data_dir}/ollama" "${data_dir}/webui" "${data_dir}/kiwix"
+if [ ! -f "${data_dir}/kiwix/library.xml" ]; then
   echo '<?xml version="1.0" encoding="UTF-8"?><library version="20110515"></library>' \
-    > "${APP_DIR}/data/kiwix/library.xml"
+    > "${data_dir}/kiwix/library.xml"
 fi
 
 echo "Starting ollama, ollama-pull, webui, kiwix..."

@@ -16,17 +16,25 @@ prompt_if_unset MAP_REGION \
   "Geofabrik region path, e.g. europe/germany (see https://download.geofabrik.de/)" \
   "" "$ENV_FILE"
 
+prompt_if_unset DATA_DIR \
+  "Directory for persistent data - osrm/tiles/photon (blank = ./data here, or an absolute path e.g. an external drive mount)" \
+  "" "$ENV_FILE"
+
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
 
-if [ ! -d "${APP_DIR}/data/osrm" ] || [ -z "$(ls -A "${APP_DIR}/data/osrm" 2>/dev/null)" ]; then
+data_dir="${DATA_DIR:-${APP_DIR}/data}"
+ensure_data_dir "$data_dir" || exit 1
+mkdir -p "${data_dir}/osrm" "${data_dir}/tiles" "${data_dir}/photon" "${data_dir}/raw"
+
+if [ -z "$(ls -A "${data_dir}/osrm" 2>/dev/null)" ]; then
   if confirm "Run the region import now? (heavy: multi-GB download + processing, can take a long time)"; then
-    MAP_REGION="${MAP_REGION}" "${APP_DIR}/scripts/import-region.sh"
+    MAP_REGION="${MAP_REGION}" DATA_DIR="${data_dir}" "${APP_DIR}/scripts/import-region.sh"
   else
-    echo "Skipping import - run MAP_REGION=${MAP_REGION} ./scripts/import-region.sh before this app will work."
+    echo "Skipping import - run MAP_REGION=${MAP_REGION} DATA_DIR=${data_dir} ./scripts/import-region.sh before this app will work."
   fi
 else
-  echo "Region data already present in data/ (skipping import)"
+  echo "Region data already present in ${data_dir}/ (skipping import)"
 fi
 
 echo "Starting osrm, tiles, geocoder, web..."

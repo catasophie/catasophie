@@ -20,7 +20,7 @@ cp -r apps/_template "$dest"
 # Portable in-place sed for both GNU and BSD sed
 sed_i() { sed -i.bak "$@" && rm -f "${@: -1}.bak"; }
 
-for f in "$dest"/docker-compose.yml "$dest"/README.md "$dest"/install.sh; do
+for f in "$dest"/docker-compose.yml "$dest"/README.md "$dest"/install.sh "$dest"/.env.example; do
   sed -i.bak \
     -e "s#__APP_ID__#${id}#g" \
     -e "s#__URL_PATH__#${url_path}#g" \

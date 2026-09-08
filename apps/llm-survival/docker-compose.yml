@@ -12,19 +12,20 @@
 # into Open WebUI's knowledge base via ingest.sh - run that after fetch.sh
 # and after webui has started at least once.
 
+# Persistent data (ollama models, webui data, kiwix ZIM) lives under
+# ${DATA_DIR:-./data} - DATA_DIR defaults to ./data next to this file,
+# but can be set to an absolute path (e.g. an external drive mount) in
+# this app's .env. See install.sh / README.md.
+
 networks:
   catasophie:
     external: true
-
-volumes:
-  ollama-data:
-  webui-data:
 
 services:
   ollama:
     image: docker.io/ollama/ollama:latest
     volumes:
-      - ollama-data:/root/.ollama
+      - ${DATA_DIR:-./data}/ollama:/root/.ollama
     networks:
       - catasophie
     restart: unless-stopped
@@ -52,7 +53,7 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_AUTH=true
     volumes:
-      - webui-data:/app/backend/data
+      - ${DATA_DIR:-./data}/webui:/app/backend/data
     networks:
       - catasophie
     restart: unless-stopped
@@ -71,7 +72,7 @@ services:
     image: ghcr.io/kiwix/kiwix-serve:latest
     command: ["--library", "/data/library.xml"]
     volumes:
-      - ./data/kiwix:/data
+      - ${DATA_DIR:-./data}/kiwix:/data
     networks:
       - catasophie
     restart: unless-stopped

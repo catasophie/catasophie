@@ -16,10 +16,15 @@ URL path, and port into the compose file and README.
   created by `scripts/up.sh`).
 - **No host ports**: don't publish ports directly to the host - only
   Traefik should be able to reach your service, over the shared network.
-- **Data**: persistent data goes under `./data/` inside the app folder
-  (already gitignored via the root `**/data/` pattern), or as named
-  volumes declared in a standard top-level `volumes:` block in your
-  `docker-compose.yml`. Both are picked up automatically by
+- **Data**: persistent data goes under `${DATA_DIR:-./data}/` inside the
+  app folder (the default `./data` is already gitignored via the root
+  `**/data/` pattern), or as named volumes declared in a standard
+  top-level `volumes:` block in your `docker-compose.yml`. Prefer the
+  `DATA_DIR`-driven bind mount over named volumes when practical - it
+  lets users redirect the app's data to an external drive by setting
+  `DATA_DIR=/absolute/path` in the app's `.env` (see
+  `apps/_template/install.sh` for the prompt/`ensure_data_dir` pattern).
+  Both bind mounts and named volumes are picked up automatically by
   `scripts/backup.sh`/`restore.sh` - no extra config needed, as long as
   volume names follow the normal top-level `volumes:` convention (see
   `docs/BACKUP_RESTORE.md`).

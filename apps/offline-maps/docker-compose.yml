@@ -10,7 +10,9 @@
 #
 # Run scripts/import-region.sh once (with MAP_REGION set in .env) before
 # starting these services - they expect data already present under
-# ./data/.
+# ${DATA_DIR:-./data}/. DATA_DIR defaults to ./data next to this file,
+# but can be set to an absolute path (e.g. an external drive mount) in
+# this app's .env.
 
 networks:
   catasophie:
@@ -21,7 +23,7 @@ services:
     image: docker.io/osrm/osrm-backend:latest
     command: ["osrm-routed", "--algorithm", "mld", "/data/region.osrm"]
     volumes:
-      - ./data/osrm:/data
+      - ${DATA_DIR:-./data}/osrm:/data
     networks:
       - catasophie
     restart: unless-stopped
@@ -36,7 +38,7 @@ services:
     image: docker.io/maptiler/tileserver-gl:latest
     command: ["--config", "/data/config.json"]
     volumes:
-      - ./data/tiles:/data
+      - ${DATA_DIR:-./data}/tiles:/data
     networks:
       - catasophie
     restart: unless-stopped
@@ -50,7 +52,7 @@ services:
   geocoder:
     image: docker.io/rtuszik/photon-docker:latest
     volumes:
-      - ./data/photon:/photon/data
+      - ${DATA_DIR:-./data}/photon:/photon/data
     networks:
       - catasophie
     restart: unless-stopped

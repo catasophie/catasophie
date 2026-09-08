@@ -2,7 +2,9 @@
 # Conventions (see docs/ADDING_AN_APP.md):
 #   - join the shared external "catasophie" network
 #   - do NOT publish ports to the host; only Traefik should reach you
-#   - persistent data goes under ./data (gitignored)
+#   - persistent data goes under ${DATA_DIR:-./data} (gitignored) so it
+#     can optionally be redirected to an external drive via DATA_DIR in
+#     this app's .env (see install.sh)
 #   - add Traefik labels so the proxy auto-discovers you, no central
 #     proxy config changes required
 
@@ -15,7 +17,7 @@ services:
     image: docker.io/hashicorp/http-echo:latest
     command: ["-text=replace me", "-listen=:__PORT__"]
     volumes:
-      - ./data:/data
+      - ${DATA_DIR:-./data}:/data
     networks:
       - catasophie
     restart: unless-stopped

@@ -15,8 +15,27 @@ mesh comms, SDR radio monitor, inventory tracker, ...).
 
 ## Quick start
 
-Requires [Podman](https://podman.io/docs/installation) and
+Requires [Podman](https://podman.io/docs/installation), Bash 4+, and
 [podman-compose](https://github.com/containers/podman-compose).
+
+**Linux** (incl. Raspberry Pi): install `podman` and `podman-compose` via
+your distro's package manager. Bash 4+ is standard on any current distro.
+
+**macOS**: install everything via Homebrew, then start the podman VM once:
+
+```sh
+brew install podman podman-compose bash
+podman machine init
+podman machine start
+```
+
+macOS ships bash 3.2 at `/bin/bash`, which these scripts can't use
+(no `mapfile`/associative arrays). Either put the Homebrew bash ahead of
+`/bin/bash` on your `PATH`, or invoke scripts with it explicitly:
+
+```sh
+$(brew --prefix)/bin/bash scripts/install.sh
+```
 
 ```sh
 ./scripts/install.sh
@@ -49,6 +68,25 @@ apps (and pull latest repo changes) with `./scripts/update.sh` - it
 automatically backs up each app before updating and rolls back
 automatically if the update leaves it unhealthy. See
 `docs/BACKUP_RESTORE.md` for manual backup/restore usage.
+
+## Storing data on an external drive
+
+Each app's installer prompts for `DATA_DIR` - leave it blank to keep
+data (ollama models, webui data, kiwix, map tiles/routing graphs, etc.)
+in `./data` next to the app, or set it to an absolute path to store it
+elsewhere, e.g. a USB/external drive mounted at `/mnt/external`:
+
+```
+DATA_DIR=/mnt/external/catasophie/llm-survival
+```
+
+Create the base folder on the drive (e.g. `mkdir -p
+/mnt/external/catasophie`) once the drive is mounted - the installer
+creates the app-specific subfolder under it, but refuses to create the
+mount point itself (to avoid silently writing to the boot disk if the
+drive isn't mounted). You can also set `DATA_DIR` by hand in
+`apps/<app-id>/.env` before running the installer. See
+`docs/ADDING_AN_APP.md` for the convention if you're adding a new app.
 
 ## Repository layout
 

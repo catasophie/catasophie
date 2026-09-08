@@ -6,14 +6,17 @@ For each app (or the core proxy stack, referred to as `_root`),
 `scripts/backup.sh` captures:
 
 - `.env` - the app's configuration
-- `data/` - bind-mounted persistent data, if the app has any (tarred as
-  `data.tar.gz`). For `offline-maps`, `data/raw/` (the source `.osm.pbf`
-  extract) is excluded by default - it's several hundred MB-GB and
-  trivially re-downloadable via `scripts/import-region.sh`, so it isn't
-  worth including in every backup.
-- Named Podman volumes declared in the app's `docker-compose.yml` (e.g.
-  `llm-survival`'s `ollama-data`/`webui-data`), exported via `podman
-  volume export` - one `volume__<name>.tar` file per volume.
+- data dir - wherever `DATA_DIR` in the app's `.env` currently points
+  (`./data` next to the app if unset - e.g. an external drive mount if
+  set), tarred as `data.tar.gz`. For `offline-maps`, `raw/` (the source
+  `.osm.pbf` extract) is excluded by default - it's several hundred
+  MB-GB and trivially re-downloadable via `scripts/import-region.sh`, so
+  it isn't worth including in every backup.
+- Named Podman volumes declared in the app's `docker-compose.yml`,
+  exported via `podman volume export` - one `volume__<name>.tar` file
+  per volume (not currently used by any bundled app - both
+  `llm-survival` and `offline-maps` use `DATA_DIR`-driven bind mounts
+  instead, precisely so their data can live on an external drive).
 
 Backups are written to `backups/<app-id>/<timestamp>/` and are entirely
 local/untracked (`backups/` is gitignored - these can contain secrets
@@ -38,9 +41,16 @@ with `--keep N`.
 ./scripts/restore.sh _root                             # restore root proxy state
 ```
 
-`restore.sh` stops the app, replaces `.env`/`data/`/volumes from the
+`restore.sh` stops the app, replaces `.env`/data/volumes from the
 backup, and starts it back up. It's destructive - it shows exactly what
 will be overwritten and requires typing `yes` unless `--yes` is passed.
+
+Note: `.env` is restored *before* data, so if the backed-up `.env` has a
+different `DATA_DIR` than what's currently set, data is restored to the
+backup's `DATA_DIR` location (e.g. if you back up with data on an
+external drive, then restore on a machine without that drive attached,
+either mount the same drive first or edit the backup's `.env` before
+restoring).
 
 ## Automatic backup + rollback during updates
 
