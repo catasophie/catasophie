@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Ingests the fetched corpus (corpus/data/raw/*.pdf) into an Open WebUI
 # "Survival & Medical" knowledge collection via its REST API, so the LLM
-# can retrieve and cite them.
+# can retrieve and cite them. Tracks which files have already been added
+# (via mark_step_done) so a re-run - after a partial failure, or simply
+# to pick up newly-added PDFs - only uploads what's new, instead of
+# re-uploading everything as duplicates.
 #
 # Requires: Open WebUI running and reachable, an admin account created
 # via the web UI on first visit, and an API key generated from
@@ -12,7 +15,11 @@
 #   OPEN_WEBUI_API_KEY=sk-... \
 #   ./ingest.sh
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")"
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$APP_DIR"
+# shellcheck source=../../scripts/lib/common.sh
+source "${APP_DIR}/../../scripts/lib/common.sh"
+APP_ID="llm-survival"
 
 : "${OPEN_WEBUI_URL:?set OPEN_WEBUI_URL, e.g. http://localhost:3001}"
 : "${OPEN_WEBUI_API_KEY:?set OPEN_WEBUI_API_KEY (Settings -> Account -> API Keys in Open WebUI)}"
@@ -69,12 +76,18 @@ fi
 
 shopt -s nullglob
 for f in data/raw/*.pdf; do
-  echo "Uploading $(basename "$f")..."
+  fname="$(basename "$f")"
+  if step_done "$APP_ID" "ingested:${fname}"; then
+    echo "skip (already ingested): ${fname}"
+    continue
+  fi
+  echo "Uploading ${fname}..."
   file_upload=$(api_call "${auth[@]}" -F "file=@${f}" "${OPEN_WEBUI_URL}/api/v1/files/") || exit 1
   file_id=$(printf '%s' "$file_upload" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
   api_call "${auth[@]}" -H "Content-Type: application/json" \
     -X POST "${OPEN_WEBUI_URL}/api/v1/knowledge/${kb_id}/file/add" \
     -d "{\"file_id\": \"${file_id}\"}" >/dev/null || exit 1
+  mark_step_done "$APP_ID" "ingested:${fname}"
   echo "  added (file_id=${file_id})"
 done
 

@@ -56,14 +56,22 @@ data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1
 mkdir -p "${data_dir}/osrm" "${data_dir}/tiles" "${data_dir}/photon" "${data_dir}/raw"
 
-if [ -z "$(ls -A "${data_dir}/osrm" 2>/dev/null)" ]; then
+# Check the actual final artifacts (not just "is the dir non-empty") -
+# import-region.sh builds these atomically (temp dir, moved into place
+# only on success - see its own comments), so their presence reliably
+# means the import genuinely completed, even if a previous attempt
+# crashed partway through and left other stray files behind.
+region_name=$(basename "${MAP_REGION:-}")
+osrm_final="${data_dir}/osrm/region.osrm"
+tiles_final="${data_dir}/tiles/${region_name}.mbtiles"
+if [ -f "$osrm_final" ] && [ -f "$tiles_final" ]; then
+  echo "Region already imported (${osrm_final}, ${tiles_final}) - skipping"
+else
   if confirm "Run the region import now? (heavy: multi-GB download + processing, can take a long time)"; then
     MAP_REGION="${MAP_REGION}" MAP_SOURCE="${MAP_SOURCE:-geofabrik}" MAP_SOURCE_URL="${MAP_SOURCE_URL:-}" DATA_DIR="${data_dir}" "${APP_DIR}/scripts/import-region.sh"
   else
     echo "Skipping import - run MAP_REGION=${MAP_REGION} MAP_SOURCE=${MAP_SOURCE:-geofabrik} DATA_DIR=${data_dir} ./scripts/import-region.sh before this app will work."
   fi
-else
-  echo "Region data already present in ${data_dir}/ (skipping import)"
 fi
 
 echo "Starting osrm, tiles, geocoder, web..."

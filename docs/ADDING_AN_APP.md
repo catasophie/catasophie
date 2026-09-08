@@ -68,6 +68,29 @@ env var name from the id).
   - call `mark_installed <app-id>` at the end so `scripts/update.sh` picks
     it up automatically
   - must be safe to re-run (idempotent)
+  - for any step that's heavy, externally-fallible, or has multiple
+    sub-stages (API calls that can be rejected, per-item processing,
+    multi-stage builds), use `mark_step_done <app-id> <step-name>` /
+    `step_done <app-id> <step-name>` / `clear_step <app-id> <step-name>`
+    (backed by `apps/<id>/.install-steps`, gitignored) so a re-run
+    resumes from wherever it left off instead of blindly redoing
+    everything or - worse - silently skipping a step that only
+    *partially* completed. Prefer this over a coarse "does some output
+    directory have anything in it" check, which can't tell a fully
+    finished step from one that crashed partway through. Two real
+    examples in this repo:
+    - `apps/llm-survival/install.sh` re-validates `OPEN_WEBUI_API_KEY`
+      with a live API call on every run (not just "is it non-empty") and
+      clears it if rejected, so a revoked/mistyped key gets re-prompted
+      instead of silently blocking ingestion forever; `ingest.sh` tracks
+      per-file ingestion so a re-run only uploads what's new.
+    - `apps/offline-maps/scripts/import-region.sh` builds its
+      multi-stage OSRM graph and vector tiles into a temporary
+      `.building` location, only moving into the final path after each
+      stage fully succeeds - so "the final file exists" reliably means
+      "this step actually finished", and a crash partway through gets
+      cleanly retried on the next run instead of being mistaken for
+      already done.
 
   `apps/_template/install.sh` has a working skeleton to copy from -
   `scripts/add-app.sh` scaffolds it automatically with the id/port
@@ -84,7 +107,7 @@ env var name from the id).
   - remove the app's data directory (resolve it via
     `_data_dir_for <app-id>`, respecting `DATA_DIR`) unless `--keep-data`
   - remove `backups/<app-id>/` unless `--keep-backups`
-  - remove the app's `.env`
+  - remove the app's `.env` and `.install-steps`
   - call `unmark_installed <app-id>` at the end
   - must be safe to re-run (no-op on anything already gone)
 

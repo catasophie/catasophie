@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Uninstalls apps/offline-maps: stops + removes its containers and any
 # named volumes, deletes its data directory (wherever DATA_DIR points -
-# see install.sh) and backups/offline-maps/, and removes its .env.
-# Destructive - asks for confirmation unless --yes is passed. Safe to
-# re-run (no-op on anything already gone).
+# see install.sh) and backups/offline-maps/, and removes its .env and
+# install-step tracking (.install-steps). Destructive - asks for
+# confirmation unless --yes is passed. Safe to re-run (no-op on
+# anything already gone).
 #
 # Usage:
 #   ./uninstall.sh                # prompts, then removes everything
@@ -39,7 +40,7 @@ echo "== ${APP_ID} uninstall =="
 echo "This will stop and remove all ${APP_ID} containers/volumes,"
 [ "$KEEP_DATA" = "1" ] || echo "  - delete its data directory (${data_dir})"
 [ "$KEEP_BACKUPS" = "1" ] || echo "  - delete backups/${APP_ID}/"
-echo "  - remove ${APP_DIR}/.env"
+echo "  - remove ${APP_DIR}/.env and .install-steps"
 [ "$WITH_IMAGES" = "1" ] && echo "  - remove its pulled container images"
 
 if [ "$ASSUME_YES" != "1" ]; then
@@ -66,7 +67,7 @@ if [ "$KEEP_BACKUPS" != "1" ]; then
   rm -rf "${BACKUPS_DIR}/${APP_ID}"
 fi
 
-rm -f "${APP_DIR}/.env"
+rm -f "${APP_DIR}/.env" "${APP_DIR}/.install-steps"
 
 unmark_installed "$APP_ID"
 echo "== ${APP_ID} uninstalled =="

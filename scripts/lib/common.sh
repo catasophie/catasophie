@@ -178,6 +178,35 @@ list_installed() {
   [ -f "$INSTALLED_MARKER_FILE" ] && cat "$INSTALLED_MARKER_FILE" || true
 }
 
+# Fine-grained progress tracking for multi-stage or externally-fallible
+# install steps (e.g. "was this API key validated", "was file X already
+# ingested") - complements mark_installed's whole-app granularity.
+# Backed by apps/<id>/.install-steps (gitignored), one step-name per
+# line, in the exact same style as the root .installed marker.
+# Usage: mark_step_done <app-id> <step-name>
+mark_step_done() {
+  local app_id="$1" step="$2"
+  local f; f="$(_app_dir_for "$app_id")/.install-steps"
+  touch "$f"
+  grep -qxF "$step" "$f" || echo "$step" >> "$f"
+}
+
+# Usage: step_done <app-id> <step-name> (exit status only, no output)
+step_done() {
+  local app_id="$1" step="$2"
+  local f; f="$(_app_dir_for "$app_id")/.install-steps"
+  [ -f "$f" ] && grep -qxF "$step" "$f"
+}
+
+# Usage: clear_step <app-id> <step-name> - e.g. to force a re-check/retry
+clear_step() {
+  local app_id="$1" step="$2"
+  local f; f="$(_app_dir_for "$app_id")/.install-steps"
+  [ -f "$f" ] || return 0
+  grep -vxF "$step" "$f" > "$f.tmp" || true
+  mv "$f.tmp" "$f"
+}
+
 # Every installable app has apps/<id>/install.sh, except the _template.
 list_available_apps() {
   local dir

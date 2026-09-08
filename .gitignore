@@ -1,5 +1,6 @@
 .env
 .installed
+**/.install-steps
 data/
 **/data/
 *.log

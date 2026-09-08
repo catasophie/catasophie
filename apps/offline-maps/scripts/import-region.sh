@@ -8,6 +8,13 @@
 # take a long time and significant disk space depending on region size.
 # Not run automatically by anything else in this repo.
 #
+# Resumable: each stage (pbf download, osrm graph, tiles) only runs if
+# its final output isn't already present, and each builds into a
+# temporary ".building" location first, only moving into the real final
+# path once it fully succeeds - so a crash/interruption partway through a
+# stage never leaves behind a partial file that looks complete. Re-run
+# this script to pick up wherever it left off.
+#
 # Usage: MAP_REGION=europe/germany ./scripts/import-region.sh
 # DATA_DIR can be set (absolute path) to build into an external drive
 # instead of the default ./data next to this app; install.sh sets this
@@ -53,28 +60,58 @@ pbf="${data_dir}/raw/${region_name}-latest.osm.pbf"
 
 if [ ! -f "$pbf" ]; then
   echo "Downloading ${MAP_REGION} extract from ${source_url}..."
-  curl -fL --retry 3 -o "$pbf" "$source_url"
+  curl -fL --retry 3 -o "$pbf.part" "$source_url"
+  mv "$pbf.part" "$pbf"
 else
   echo "Using existing extract: $pbf"
 fi
 
-echo "== Building OSRM graph (car profile, MLD) =="
-cp "$pbf" "${data_dir}/osrm/region.osm.pbf"
-podman run --rm -v "${data_dir}/osrm:/data" docker.io/osrm/osrm-backend:latest \
-  osrm-extract -p /opt/car.lua /data/region.osm.pbf
-podman run --rm -v "${data_dir}/osrm:/data" docker.io/osrm/osrm-backend:latest \
-  osrm-partition /data/region.osrm
-podman run --rm -v "${data_dir}/osrm:/data" docker.io/osrm/osrm-backend:latest \
-  osrm-customize /data/region.osrm
-rm -f "${data_dir}/osrm/region.osm.pbf"
+osrm_final="${data_dir}/osrm/region.osrm"
+if [ -f "$osrm_final" ]; then
+  echo "OSRM graph already built (${osrm_final}) - skipping"
+else
+  echo "== Building OSRM graph (car profile, MLD) =="
+  # Build into a scratch subdir first - osrm-extract/partition/customize
+  # run in sequence against the *same* file, each augmenting it in
+  # place, so a failure at any stage leaves a half-built graph. Only
+  # move the whole set of region.osrm* files into their final location
+  # after all three stages succeed, so "region.osrm exists in its final
+  # location" reliably means the graph is actually complete and usable.
+  build_dir="${data_dir}/osrm/.building"
+  rm -rf "$build_dir"
+  mkdir -p "$build_dir"
+  cp "$pbf" "${build_dir}/region.osm.pbf"
+  podman run --rm -v "${build_dir}:/data" docker.io/osrm/osrm-backend:latest \
+    osrm-extract -p /opt/car.lua /data/region.osm.pbf
+  podman run --rm -v "${build_dir}:/data" docker.io/osrm/osrm-backend:latest \
+    osrm-partition /data/region.osrm
+  podman run --rm -v "${build_dir}:/data" docker.io/osrm/osrm-backend:latest \
+    osrm-customize /data/region.osrm
+  rm -f "${build_dir}/region.osm.pbf"
+  # Move the whole region.osrm* file set (OSRM produces several sidecar
+  # files sharing this prefix) into the real osrm/ dir, then the marker
+  # (region.osrm) only appears once everything else is already in place.
+  mv "${build_dir}"/region.osrm* "${data_dir}/osrm/"
+  rmdir "$build_dir" 2>/dev/null || true
+fi
 
-echo "== Building vector tiles (Planetiler) =="
-podman run --rm \
-  -v "${data_dir}/raw:/data/raw" \
-  -v "${data_dir}/tiles:/data/tiles" \
-  ghcr.io/onthegomap/planetiler:latest \
-  --download --area="${region_name}" --osm-path="/data/raw/${region_name}-latest.osm.pbf" \
-  --output="/data/tiles/${region_name}.mbtiles"
+mbtiles_final="${data_dir}/tiles/${region_name}.mbtiles"
+if [ -f "$mbtiles_final" ]; then
+  echo "Vector tiles already built (${mbtiles_final}) - skipping"
+else
+  echo "== Building vector tiles (Planetiler) =="
+  build_dir="${data_dir}/tiles/.building"
+  rm -rf "$build_dir"
+  mkdir -p "$build_dir"
+  podman run --rm \
+    -v "${data_dir}/raw:/data/raw" \
+    -v "${build_dir}:/data/tiles" \
+    ghcr.io/onthegomap/planetiler:latest \
+    --download --area="${region_name}" --osm-path="/data/raw/${region_name}-latest.osm.pbf" \
+    --output="/data/tiles/${region_name}.mbtiles"
+  mv "${build_dir}/${region_name}.mbtiles" "$mbtiles_final"
+  rm -rf "$build_dir"
+fi
 cat > "${data_dir}/tiles/config.json" <<EOF
 {
   "options": { "paths": { "root": "/data" } },

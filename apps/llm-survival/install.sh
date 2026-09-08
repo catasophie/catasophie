@@ -57,8 +57,28 @@ for _ in $(seq 1 60); do
 done
 
 if grep -qE '^OPEN_WEBUI_API_KEY=.+' "$ENV_FILE" 2>/dev/null; then
-  echo "OPEN_WEBUI_API_KEY already set (skipping manual setup step)"
-else
+  # A key is present, but check it's actually still valid rather than
+  # blindly trusting it forever - a revoked/mistyped key would otherwise
+  # silently block corpus ingestion on every future re-run with no clear
+  # signal why (see docs/ADDING_AN_APP.md's step-tracking notes).
+  # shellcheck disable=SC1090
+  set -a; source "$ENV_FILE"; set +a
+  status=$(curl -s -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer ${OPEN_WEBUI_API_KEY}" \
+    "http://localhost:${webui_port}/api/v1/knowledge/list" 2>/dev/null || echo "000")
+  if [ "$status" -ge 200 ] 2>/dev/null && [ "$status" -lt 400 ] 2>/dev/null; then
+    echo "OPEN_WEBUI_API_KEY already set and valid (skipping manual setup step)"
+  elif [ "$status" = "401" ] || [ "$status" = "403" ] || [ "$status" = "404" ]; then
+    echo "warn: the saved OPEN_WEBUI_API_KEY was rejected (HTTP ${status}) - it may have been" >&2
+    echo "  revoked or mistyped. Clearing it so you can paste a fresh one." >&2
+    sed -i.bak "/^OPEN_WEBUI_API_KEY=/d" "$ENV_FILE" && rm -f "$ENV_FILE.bak"
+  else
+    echo "warn: couldn't verify OPEN_WEBUI_API_KEY right now (HTTP ${status} - webui may still be" >&2
+    echo "  starting up). Assuming it's still valid; re-run this installer if ingestion fails." >&2
+  fi
+fi
+
+if ! grep -qE '^OPEN_WEBUI_API_KEY=.+' "$ENV_FILE" 2>/dev/null; then
   cat <<EOF
 
 Open WebUI needs a one-time manual step (no API for this part):
