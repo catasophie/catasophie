@@ -5,14 +5,15 @@ Compose project, reachable directly on its own published port(s) - no
 shared proxy or network involved.
 
 ```sh
-make add-app ARGS="my-tool 8000"
-# or: ./apps/cli/scripts/add-app.sh my-tool 8000
+make add-app
+# or: ./apps/cli/scripts/add-app.sh
 ```
 
-This copies `apps/_template/` to `apps/my-tool/` and substitutes the id
-and default port into the compose file, install/uninstall/up/down
-scripts, `.env.example`, and README (including deriving a valid
-`MY_TOOL_PORT` env var name from the id).
+This prompts for an app id and a default port, then copies
+`apps/_template/` to `apps/<app-id>/` and substitutes both into the
+compose file, install/uninstall/up/down scripts, `.env.example`, and
+README (including deriving a valid `SCREAMING_SNAKE_CASE` port env var
+name from the id, e.g. `MY_TOOL_PORT` for `my-tool`).
 
 ## Contract
 

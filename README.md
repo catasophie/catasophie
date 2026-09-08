@@ -153,8 +153,8 @@ catasophie/
 ## Adding a new app
 
 ```sh
-make add-app ARGS="my-tool 8000"
-# or: ./apps/cli/scripts/add-app.sh my-tool 8000
+make add-app
+# or: ./apps/cli/scripts/add-app.sh
 ```
 
 See `docs/ADDING_AN_APP.md` for the full convention (published port,

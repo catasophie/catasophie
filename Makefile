@@ -21,5 +21,5 @@ backup: ## Back up app data + .env: make backup ARGS="offline-maps"
 restore: ## Restore an app from a backup: make restore ARGS="offline-maps"
 	./$(SCRIPTS)/restore.sh $(ARGS)
 
-add-app: ## Scaffold a new app: make add-app ARGS="my-app 3020"
-	./$(SCRIPTS)/add-app.sh $(ARGS)
+add-app: ## Scaffold a new app (prompts for app id + port): make add-app
+	./$(SCRIPTS)/add-app.sh

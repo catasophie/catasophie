@@ -1,19 +1,39 @@
 #!/usr/bin/env bash
 # Scaffolds a new app by copying apps/_template/ to apps/<id>/ and
 # substituting the id in the template files. See docs/ADDING_AN_APP.md.
-# Usage: make add-app ARGS="<app-id> <default-port>"
-# Example: make add-app ARGS="radio-sdr 3020"
+# Interactively prompts for the app id and default port (no arguments
+# needed).
+# Usage: make add-app
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 
-id="${1:?usage: add-app.sh <app-id> <default-port>}"
-port="${2:?usage: add-app.sh <app-id> <default-port>}"
+id=""
+while true; do
+  read -r -p "App id (lowercase, digits, hyphens, e.g. radio-sdr): " id
+  if [ -z "$id" ]; then
+    echo "error: app id can't be empty" >&2
+    continue
+  fi
+  if ! [[ "$id" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+    echo "error: app id must be lowercase letters/digits, hyphen-separated (e.g. radio-sdr)" >&2
+    continue
+  fi
+  if [ -e "apps/$id" ]; then
+    echo "error: apps/$id already exists" >&2
+    continue
+  fi
+  break
+done
 dest="apps/$id"
 
-if [ -e "$dest" ]; then
-  echo "error: $dest already exists" >&2
-  exit 1
-fi
+port=""
+while true; do
+  read -r -p "Default port to publish $id on (e.g. 3020): " port
+  if [[ "$port" =~ ^[0-9]+$ ]]; then
+    break
+  fi
+  echo "error: port must be a number" >&2
+done
 
 # Env var names can't contain hyphens (app-ids can, e.g. "offline-maps") -
 # derive a valid SCREAMING_SNAKE_CASE port variable name from the id.
