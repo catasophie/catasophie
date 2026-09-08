@@ -87,6 +87,24 @@ URL path, and port into the compose file and README.
   `apps/_template/install.sh` has a working skeleton to copy from -
   `scripts/add-app.sh` scaffolds it automatically with the id/path/port
   substituted in.
+- **uninstall.sh**: every app must also ship an `uninstall.sh` (called
+  by `scripts/uninstall.sh`'s wizard, and directly runnable per-app).
+  Contract:
+  - `source` `scripts/lib/common.sh`, `check_deps` at the top
+  - accept `--yes` (skip confirmation), `--keep-data`, `--keep-backups`,
+    and `--with-images` flags (see `apps/_template/uninstall.sh`)
+  - confirm before doing anything destructive, unless `--yes`
+  - `podman-compose -f docker-compose.yml down -v` (add `--rmi all` if
+    `--with-images`) to stop and remove containers + any named volumes
+  - remove the app's data directory (resolve it via
+    `_data_dir_for <app-id>`, respecting `DATA_DIR`) unless `--keep-data`
+  - remove `backups/<app-id>/` unless `--keep-backups`
+  - remove the app's `.env`
+  - call `unmark_installed <app-id>` at the end
+  - must be safe to re-run (no-op on anything already gone)
+
+  `apps/_template/uninstall.sh` has a working skeleton to copy from -
+  `scripts/add-app.sh` scaffolds it automatically too.
 
 ## Registering it
 

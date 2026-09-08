@@ -76,6 +76,73 @@ prompt_if_unset() {
   fi
 }
 
+# Reads VAR from env_file; if unset/empty, prompts interactively for a
+# single choice from a space-separated list of options (default
+# pre-selected). Uses a whiptail/dialog radiolist when available
+# (falling back to it if the user cancels), otherwise a plain numbered
+# prompt. No-op if VAR is already set - safe to re-run.
+# Usage: prompt_choice_if_unset VAR_NAME "Prompt text" "opt1 opt2 opt3" "default_opt" "path/to/.env"
+prompt_choice_if_unset() {
+  local var_name="$1" prompt_text="$2" opts_str="$3" default_opt="$4" env_file="$5"
+  local current
+  current=$(grep -E "^${var_name}=" "$env_file" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
+
+  if [ -n "$current" ]; then
+    echo "  ${var_name} already set (skipping prompt)"
+    return 0
+  fi
+
+  local -a opts
+  read -r -a opts <<< "$opts_str"
+  local choice=""
+
+  local tool=""
+  if command -v whiptail >/dev/null 2>&1; then
+    tool=whiptail
+  elif command -v dialog >/dev/null 2>&1; then
+    tool=dialog
+  fi
+
+  if [ -n "$tool" ]; then
+    local args=(--radiolist "$prompt_text" 20 78 "${#opts[@]}")
+    local opt status
+    for opt in "${opts[@]}"; do
+      status="OFF"
+      [ "$opt" = "$default_opt" ] && status="ON"
+      args+=("$opt" "$opt" "$status")
+    done
+    if ! choice=$("$tool" "${args[@]}" 3>&1 1>&2 2>&3); then
+      echo "Cancelled - using default: ${default_opt}"
+      choice="$default_opt"
+    fi
+  else
+    echo "$prompt_text"
+    local i=1 opt
+    local -A idx_to_opt
+    for opt in "${opts[@]}"; do
+      local marker=""
+      [ "$opt" = "$default_opt" ] && marker=" (default)"
+      printf "  %d) %s%s\n" "$i" "$opt" "$marker"
+      idx_to_opt[$i]="$opt"
+      i=$((i + 1))
+    done
+    local answer
+    read -r -p "Enter number [${default_opt}]: " answer
+    if [ -z "$answer" ]; then
+      choice="$default_opt"
+    else
+      choice="${idx_to_opt[$answer]:-$default_opt}"
+    fi
+  fi
+
+  if grep -qE "^${var_name}=" "$env_file" 2>/dev/null; then
+    sed -i.bak "s#^${var_name}=.*#${var_name}=${choice}#" "$env_file" && rm -f "$env_file.bak"
+  else
+    echo "${var_name}=${choice}" >> "$env_file"
+  fi
+  echo "  ${var_name}=${choice}"
+}
+
 # Asks a yes/no question. Returns 0 for yes, 1 for no. Default is "no"
 # unless second arg is "y".
 confirm() {
@@ -87,56 +154,19 @@ confirm() {
   [[ "$answer" =~ ^[Yy] ]]
 }
 
-# Detects the podman API socket path (preferring the rootless per-user
-# socket on Linux, or the podman-machine VM socket on macOS) and writes
-# it into the root .env if PODMAN_SOCK isn't already set there. Traefik
-# needs this to watch containers via labels.
-ensure_podman_sock() {
-  local env_file="${CATASOPHIE_ROOT}/.env"
-  touch "$env_file"
-  local current
-  current=$(grep -E "^PODMAN_SOCK=" "$env_file" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
-  if [ -n "$current" ]; then
-    return 0
-  fi
-
-  # Works on both platforms: podman itself resolves the right socket,
-  # including the VM-forwarded one on macOS (podman machine).
-  local sock=""
-  if command -v podman >/dev/null 2>&1; then
-    sock=$(podman info --format '{{.Host.RemoteSocket.Path}}' 2>/dev/null || true)
-  fi
-
-  if [ -z "$sock" ] || [ ! -S "$sock" ]; then
-    if [ "$(uname -s)" = "Darwin" ]; then
-      # Fallback for macOS: ask the active podman machine directly.
-      sock=$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null || true)
-    else
-      sock="/run/user/$(id -u)/podman/podman.sock"
-    fi
-  fi
-
-  if [ -z "$sock" ] || [ ! -S "$sock" ]; then
-    echo "warn: podman socket not found/active at ${sock:-<unknown>}" >&2
-    if [ "$(uname -s)" = "Darwin" ]; then
-      echo "  start it with: podman machine init (if needed) && podman machine start" >&2
-    else
-      echo "  enable it with: systemctl --user enable --now podman.socket" >&2
-    fi
-  fi
-
-  if grep -qE "^PODMAN_SOCK=" "$env_file" 2>/dev/null; then
-    sed -i.bak "s#^PODMAN_SOCK=.*#PODMAN_SOCK=${sock}#" "$env_file" && rm -f "$env_file.bak"
-  else
-    echo "PODMAN_SOCK=${sock}" >> "$env_file"
-  fi
-  echo "  detected podman socket: ${sock}"
-}
-
 mark_installed() {
   local app_id="$1"
   touch "$INSTALLED_MARKER_FILE"
   grep -qxF "$app_id" "$INSTALLED_MARKER_FILE" || echo "$app_id" >> "$INSTALLED_MARKER_FILE"
+}
+
+# Removes app_id from the installed marker file (used by uninstall.sh).
+# No-op if the marker file doesn't exist or doesn't list it.
+unmark_installed() {
+  local app_id="$1"
+  [ -f "$INSTALLED_MARKER_FILE" ] || return 0
+  grep -vxF "$app_id" "$INSTALLED_MARKER_FILE" > "${INSTALLED_MARKER_FILE}.tmp" || true
+  mv "${INSTALLED_MARKER_FILE}.tmp" "$INSTALLED_MARKER_FILE"
 }
 
 is_installed() {

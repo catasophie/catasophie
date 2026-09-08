@@ -14,14 +14,31 @@ from locally stored OpenStreetMap data - no internet required once set up.
 
 ## One-time setup: import a region
 
+`./install.sh` prompts for the data source (`MAP_SOURCE`) and region -
+choose from:
+
+- **geofabrik** (default) - [Geofabrik](https://download.geofabrik.de/),
+  `MAP_REGION` is a hierarchical region path, e.g. `europe/germany`
+- **osmfr** - [openstreetmap.fr](https://download.openstreetmap.fr/extracts/)
+  mirror, same `MAP_REGION` format as Geofabrik
+- **bbbike** - [BBBike](https://download.bbbike.org/osm/bbbike/) per-city
+  extracts, `MAP_REGION` is just a city name, e.g. `Berlin`
+- **custom** - provide the full `.osm.pbf` URL yourself via
+  `MAP_SOURCE_URL`; `MAP_REGION` is only used to label the output files
+
+Or run the import script directly:
+
 ```sh
-MAP_REGION=europe/germany ./apps/offline-maps/scripts/import-region.sh
+MAP_REGION=europe/germany MAP_SOURCE=geofabrik ./apps/offline-maps/scripts/import-region.sh
+MAP_REGION=Berlin MAP_SOURCE=bbbike ./apps/offline-maps/scripts/import-region.sh
+MAP_REGION=my-region MAP_SOURCE_URL=https://example.com/custom.osm.pbf ./apps/offline-maps/scripts/import-region.sh
 ```
 
-See [Geofabrik](https://download.geofabrik.de/) for valid region paths.
 This downloads the OSM extract and builds the OSRM graph + vector tiles
-into `apps/offline-maps/data/` (gitignored). It also explains how to add a
-Photon geocoder index (prebuilt per-country, see script output).
+into `apps/offline-maps/data/` (gitignored, or wherever `DATA_DIR` in
+`.env` points - see the root README's "Storing data on an external
+drive" section). It also explains how to add a Photon geocoder index
+(prebuilt per-country, see script output).
 
 This is a heavy step - expect it to take a while and use several GB of
 disk for anything larger than a small country/state.

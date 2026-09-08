@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Downloads a Geofabrik OSM extract for $MAP_REGION and builds:
+# Downloads an OSM extract for $MAP_REGION and builds:
 #   - an OSRM routing graph (car profile, MLD algorithm)
 #   - an .mbtiles vector tileset (via Planetiler)
 #   - a Photon geocoder index (prebuilt per-country dump when available)
@@ -12,19 +12,48 @@
 # DATA_DIR can be set (absolute path) to build into an external drive
 # instead of the default ./data next to this app; install.sh sets this
 # for you when invoking this script.
+#
+# MAP_SOURCE selects where the extract is downloaded from (install.sh
+# prompts for this):
+#   geofabrik (default) - https://download.geofabrik.de/ - MAP_REGION is
+#     a hierarchical region path, e.g. europe/germany
+#   osmfr               - https://download.openstreetmap.fr/extracts/
+#     mirror, same MAP_REGION format as geofabrik
+#   bbbike              - https://download.bbbike.org/osm/bbbike/ -
+#     MAP_REGION is just a city name, e.g. Berlin
+#   custom              - set MAP_SOURCE_URL to the full .osm.pbf URL
+#     yourself; MAP_REGION is only used to label the output files
+# MAP_SOURCE_URL, if set, always overrides the computed URL regardless
+# of MAP_SOURCE (useful for one-off/manual runs).
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-: "${MAP_REGION:?set MAP_REGION, e.g. europe/germany (see https://download.geofabrik.de/)}"
+: "${MAP_REGION:?set MAP_REGION, e.g. europe/germany (see https://download.geofabrik.de/), or a BBBike city name if MAP_SOURCE=bbbike}"
 region_name=$(basename "$MAP_REGION")
 data_dir="${DATA_DIR:-$(pwd)/data}"
+
+if [ -n "${MAP_SOURCE_URL:-}" ]; then
+  source_url="$MAP_SOURCE_URL"
+else
+  case "${MAP_SOURCE:-geofabrik}" in
+    osmfr)
+      source_url="https://download.openstreetmap.fr/extracts/${MAP_REGION}-latest.osm.pbf"
+      ;;
+    bbbike)
+      source_url="https://download.bbbike.org/osm/bbbike/${MAP_REGION}/${MAP_REGION}.osm.pbf"
+      ;;
+    *)
+      source_url="https://download.geofabrik.de/${MAP_REGION}-latest.osm.pbf"
+      ;;
+  esac
+fi
 
 mkdir -p "${data_dir}/raw" "${data_dir}/osrm" "${data_dir}/tiles" "${data_dir}/photon"
 pbf="${data_dir}/raw/${region_name}-latest.osm.pbf"
 
 if [ ! -f "$pbf" ]; then
-  echo "Downloading ${MAP_REGION} extract from Geofabrik..."
-  curl -fL --retry 3 -o "$pbf" "https://download.geofabrik.de/${MAP_REGION}-latest.osm.pbf"
+  echo "Downloading ${MAP_REGION} extract from ${source_url}..."
+  curl -fL --retry 3 -o "$pbf" "$source_url"
 else
   echo "Using existing extract: $pbf"
 fi

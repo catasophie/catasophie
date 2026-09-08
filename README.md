@@ -69,6 +69,23 @@ automatically backs up each app before updating and rolls back
 automatically if the update leaves it unhealthy. See
 `docs/BACKUP_RESTORE.md` for manual backup/restore usage.
 
+Uninstall with `./scripts/uninstall.sh` - it asks for confirmation, then
+removes containers/volumes, data directories, backups, `.env` files, and
+the shared network, restoring the repo to its state before
+`scripts/install.sh` was ever run:
+
+```sh
+./scripts/uninstall.sh                       # everything (full reset)
+./scripts/uninstall.sh llm-survival           # just one app
+./scripts/uninstall.sh --keep-data            # keep data directories
+./scripts/uninstall.sh --keep-backups         # keep backups/
+./scripts/uninstall.sh --yes                  # skip confirmation
+```
+
+Each app also ships its own `apps/<app-id>/uninstall.sh` (same flags),
+which the root script calls under the hood - run it directly to remove
+just that app without touching anything else.
+
 ## Storing data on an external drive
 
 Each app's installer prompts for `DATA_DIR` - leave it blank to keep
@@ -88,6 +105,42 @@ drive isn't mounted). You can also set `DATA_DIR` by hand in
 `apps/<app-id>/.env` before running the installer. See
 `docs/ADDING_AN_APP.md` for the convention if you're adding a new app.
 
+## Troubleshooting
+
+**404 on an app's URL, but the container is running**: Traefik
+discovers routes by watching the Podman API socket - check `podman logs
+catasophie_proxy_1` for `providerName=docker` errors:
+- `permission denied ... docker.sock`: the socket is owned by
+  root/SELinux-labeled for the podman service only. `docker-compose.yml`
+  already sets `security_opt: label=disable` on the `proxy` service to
+  cover this (relevant on any SELinux-enforcing host, including the
+  Fedora CoreOS VM that `podman machine` runs on macOS) - if you're
+  still hitting this, make sure you're on a version of this repo with
+  that fix.
+- `connection refused` / `no such file or directory`: `PODMAN_SOCK` in
+  the root `.env` points at the wrong socket. On macOS specifically, it
+  must be the path *inside* the podman machine VM (typically
+  `/run/podman/podman.sock`), not the host-side API-forwarding socket
+  from `podman machine inspect` - containers (including Traefik) run
+  inside the VM, so bind-mount sources are resolved there, not on the
+  Mac host. Delete the `PODMAN_SOCK=` line from `.env` and re-run
+  `./scripts/up.sh` to have it re-detected, then `podman-compose down &&
+  podman-compose up -d` to pick up the change.
+
+**Podman machine disk full** (`no space left on device` while pulling
+an image, macOS only): the podman machine VM has its own fixed-size
+virtual disk, separate from your Mac's actual free space. Grow it with:
+```sh
+podman machine stop
+podman machine set --disk-size 60 podman-machine-default
+podman machine start
+```
+If `df -h /` inside the VM (`podman machine ssh` then `df -h /`) still
+shows the old size, the partition/filesystem needs growing too:
+```sh
+podman machine ssh podman-machine-default 'sudo growpart /dev/vda 4 && sudo xfs_growfs /var'
+```
+
 ## Repository layout
 
 ```
@@ -100,6 +153,7 @@ catasophie/
 │   └── _template/          # copy this to scaffold a new app
 ├── scripts/
 │   ├── install.sh           # root wizard: pick + install app(s)
+│   ├── uninstall.sh          # remove installed app(s), or everything
 │   ├── update.sh             # git pull + update apps, with auto backup/rollback
 │   ├── backup.sh / restore.sh # manual backup + restore (data/volumes/.env)
 │   ├── up.sh / down.sh        # start/stop the proxy and named apps
