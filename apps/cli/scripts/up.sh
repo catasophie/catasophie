@@ -3,7 +3,7 @@
 # project reachable directly on its own published host port(s) - no
 # shared network or reverse proxy involved.
 # Usage:
-#   catasophie up llm-survival offline-maps
+#   make up ARGS="llm-survival offline-maps"
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 # shellcheck source=apps/cli/scripts/lib/common.sh
@@ -11,7 +11,7 @@ source "apps/cli/scripts/lib/common.sh"
 
 if [ "$#" -eq 0 ]; then
   echo "usage: $0 <app-id> [app-id...]" >&2
-  echo "  (see docs/ADDING_AN_APP.md or \`catasophie install\` for the interactive wizard)" >&2
+  echo "  (see docs/ADDING_AN_APP.md or \`make install\` for the interactive wizard)" >&2
   exit 1
 fi
 

@@ -5,7 +5,7 @@ Compose project, reachable directly on its own published port(s) - no
 shared proxy or network involved.
 
 ```sh
-catasophie add-app my-tool 8000
+make add-app ARGS="my-tool 8000"
 # or: ./apps/cli/scripts/add-app.sh my-tool 8000
 ```
 
@@ -35,7 +35,7 @@ env var name from the id).
   `DATA_DIR=/absolute/path` in the app's `.env` (see
   `apps/_template/install.sh` for the prompt/`ensure_data_dir` pattern).
   Both bind mounts and named volumes are picked up automatically by
-  `catasophie backup`/`restore` - no extra config needed, as long as
+  `make backup`/`make restore` - no extra config needed, as long as
   volume names follow the normal top-level `volumes:` convention (see
   `docs/BACKUP_RESTORE.md`).
 - **Multiple services calling each other**: if your app has a frontend
@@ -53,10 +53,10 @@ env var name from the id).
   imports, etc.) - keep heavy setup steps as explicit scripts, not
   something that runs automatically.
 - **.env.example**: if your app needs configuration, provide an
-  `.env.example` in the app folder; `catasophie up` copies it to `.env` on
+  `.env.example` in the app folder; `make up` copies it to `.env` on
   first start if missing.
 - **install.sh**: every app must ship an `install.sh` (this is what
-  `catasophie install`'s wizard calls). Contract:
+  `make install`'s wizard calls). Contract:
   - `source` `apps/cli/scripts/lib/common.sh` for shared helpers
   - `check_deps` at the top
   - `ensure_env_file "$APP_DIR"` then use `prompt_if_unset VAR "prompt text" "default" "$ENV_FILE"`
@@ -66,7 +66,7 @@ env var name from the id).
   - use `confirm "question"` before any heavy/slow step (large downloads,
     long-running imports)
   - start the app's containers (`podman-compose -f docker-compose.yml up -d`)
-  - call `mark_installed <app-id>` at the end so `catasophie update` picks
+  - call `mark_installed <app-id>` at the end so `make update` picks
     it up automatically
   - must be safe to re-run (idempotent)
   - for any step that's heavy, externally-fallible, or has multiple
@@ -100,10 +100,10 @@ env var name from the id).
       (`DATA_DIR`, ports).
 
   `apps/_template/install.sh` has a working skeleton to copy from -
-  `catasophie add-app` scaffolds it automatically with the id/port
+  `make add-app` scaffolds it automatically with the id/port
   substituted in.
 - **uninstall.sh**: every app must also ship an `uninstall.sh` (called
-  by `catasophie uninstall`'s wizard, and directly runnable per-app).
+  by `make uninstall`'s wizard, and directly runnable per-app).
   Contract:
   - `source` `apps/cli/scripts/lib/common.sh`, `check_deps` at the top
   - accept `--yes` (skip confirmation), `--keep-data`, `--keep-backups`,
@@ -119,7 +119,7 @@ env var name from the id).
   - must be safe to re-run (no-op on anything already gone)
 
   `apps/_template/uninstall.sh` has a working skeleton to copy from -
-  `catasophie add-app` scaffolds it automatically too.
+  `make add-app` scaffolds it automatically too.
 
 ## Registering it
 
@@ -136,12 +136,12 @@ podman-compose -f apps/my-tool/docker-compose.yml down
 Or via the helper that also handles `.env` bootstrapping:
 
 ```sh
-catasophie up my-tool
-catasophie down my-tool
+make up ARGS="my-tool"
+make down ARGS="my-tool"
 ```
 
 Or run its interactive installer directly (also invoked by the root
-wizard, `catasophie install`):
+wizard, `make install`):
 
 ```sh
 ./apps/my-tool/install.sh

@@ -113,7 +113,7 @@ if [ -f "$mbtiles_final" ]; then
   echo "Vector tiles already built (${mbtiles_final}) - skipping"
 else
   if ! confirm "Run the region import now? (heavy: multi-GB download + processing, can take a long time)"; then
-    echo "Skipping import - re-run ${APP_DIR}/scripts/import-region.sh (or catasophie install offline-maps) when ready."
+    echo "Skipping import - re-run ${APP_DIR}/scripts/import-region.sh (or make install ARGS=\"offline-maps\") when ready."
     exit 0
   fi
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Restores an app's .env, bind-mounted data/, and named volumes from a
-# backup created by `catasophie backup`. Destructive - overwrites current
+# backup created by `make backup`. Destructive - overwrites current
 # state - so it asks for confirmation unless --yes is passed.
 #
 # Usage:
-#   catasophie restore <app-id> [timestamp|latest] [--yes]
-#   catasophie restore llm-survival                  # restores latest
-#   catasophie restore llm-survival 2026-09-07T20-30-00Z
-#   catasophie restore offline-maps latest --yes
+#   make restore ARGS="<app-id> [timestamp|latest] [--yes]"
+#   make restore ARGS="llm-survival"                          # restores latest
+#   make restore ARGS="llm-survival 2026-09-07T20-30-00Z"
+#   make restore ARGS="offline-maps latest --yes"
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 # shellcheck source=apps/cli/scripts/lib/common.sh

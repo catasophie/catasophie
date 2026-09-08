@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Updates the repo (git pull) and pulls+recreates containers for every
 # installed app (or just the ones named as args). Before touching each
-# app, takes a backup (`catasophie backup`) and snapshots its current
+# app, takes a backup (`make backup`) and snapshots its current
 # image IDs; if the update leaves any container unhealthy, automatically
 # restores the backup and re-pins the previous image, then recreates
 # containers from it (full rollback).
 #
 # Usage:
-#   catasophie update                       # update everything installed
-#   catasophie update llm-survival           # update just this app
-#   catasophie update --no-backup            # skip pre-update backups (not recommended)
-#   catasophie update --stop-on-failure       # abort remaining updates on first failure
+#   make update                                # update everything installed
+#   make update ARGS="llm-survival"             # update just this app
+#   make update ARGS="--no-backup"              # skip pre-update backups (not recommended)
+#   make update ARGS="--stop-on-failure"        # abort remaining updates on first failure
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 # shellcheck source=apps/cli/scripts/lib/common.sh
@@ -100,7 +100,7 @@ fi
 
 if [ "${#targets[@]}" -eq 0 ]; then
   echo
-  echo "No installed apps to update (run \`catasophie install\` first)."
+  echo "No installed apps to update (run \`make install\` first)."
 else
   for id in "${targets[@]}"; do
     compose_file="apps/$id/docker-compose.yml"

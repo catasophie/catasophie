@@ -20,7 +20,7 @@ history if you want to bring them back.
 
 `scripts/import-region.sh` prompts for the data source (`MAP_SOURCE`)
 and region if they aren't already configured, and persists your answers
-to this app's `.env`. `catasophie install offline-maps` calls it for you
+to this app's `.env`. `make install ARGS="offline-maps"` calls it for you
 automatically after asking the questions it needs itself (data
 directory, ports) - choose from:
 

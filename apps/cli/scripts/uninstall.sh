@@ -5,18 +5,18 @@
 # happens to record - that marker can be stale, e.g. if install.sh
 # crashed before reaching mark_installed) plus backups/ and the
 # .installed marker - restoring the repo to its state before
-# catasophie install was ever run.
+# make install was ever run.
 #
 # Destructive - asks for confirmation unless --yes is passed.
 #
 # Usage:
-#   catasophie uninstall                       # everything (full reset)
-#   catasophie uninstall llm-survival           # just one app
-#   catasophie uninstall llm-survival offline-maps
-#   catasophie uninstall --yes                  # skip confirmation
-#   catasophie uninstall --keep-data            # keep data directories
-#   catasophie uninstall --keep-backups         # keep backups/
-#   catasophie uninstall --with-images          # also remove pulled images
+#   make uninstall                                     # everything (full reset)
+#   make uninstall ARGS="llm-survival"                  # just one app
+#   make uninstall ARGS="llm-survival offline-maps"
+#   make uninstall ARGS="--yes"                          # skip confirmation
+#   make uninstall ARGS="--keep-data"                    # keep data directories
+#   make uninstall ARGS="--keep-backups"                 # keep backups/
+#   make uninstall ARGS="--with-images"                  # also remove pulled images
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 # shellcheck source=apps/cli/scripts/lib/common.sh
@@ -51,7 +51,7 @@ if [ "${#targets[@]}" -eq 0 ]; then
   mapfile -t targets < <(list_available_apps | sort)
 fi
 
-echo "== catasophie uninstall =="
+echo "== make uninstall =="
 if [ "${#targets[@]}" -eq 0 ]; then
   echo "No apps found under apps/."
 else

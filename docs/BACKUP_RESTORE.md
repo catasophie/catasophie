@@ -2,7 +2,7 @@
 
 ## What gets backed up
 
-For each app, `catasophie backup` captures:
+For each app, `make backup` captures:
 
 - `.env` - the app's configuration
 - data dir - wherever `DATA_DIR` in the app's `.env` currently points
@@ -30,13 +30,13 @@ with `--keep N`.
 ## Manual usage
 
 ```sh
-catasophie backup                       # back up every installed app
-catasophie backup llm-survival           # just one app
-catasophie backup offline-maps --keep 3  # override retention
+make backup                             # back up every installed app
+make backup ARGS="llm-survival"         # just one app
+make backup ARGS="offline-maps --keep 3"  # override retention
 
-catasophie restore llm-survival                    # restore latest backup (asks to confirm)
-catasophie restore llm-survival 2026-09-07T20-30-00Z  # restore a specific timestamp
-catasophie restore offline-maps latest --yes        # skip confirmation
+make restore ARGS="llm-survival"                    # restore latest backup (asks to confirm)
+make restore ARGS="llm-survival 2026-09-07T20-30-00Z"  # restore a specific timestamp
+make restore ARGS="offline-maps latest --yes"        # skip confirmation
 ```
 
 `restore.sh` stops the app, replaces `.env`/data/volumes from the
@@ -52,7 +52,7 @@ restoring).
 
 ## Automatic backup + rollback during updates
 
-`catasophie update` wraps every app update with:
+`make update` wraps every app update with:
 
 1. **Backup** - `backup_app` before touching anything (skip with `--no-backup`, not recommended)
 2. **Image snapshot** - records the currently-running image ID for each service
@@ -71,9 +71,9 @@ still get updated, and failures are summarized at the
 end. Pass `--stop-on-failure` to abort immediately instead.
 
 ```sh
-catasophie update                    # update everything installed, with backup+rollback
-catasophie update llm-survival        # just this app
-catasophie update --stop-on-failure
+make update                          # update everything installed, with backup+rollback
+make update ARGS="llm-survival"       # just this app
+make update ARGS="--stop-on-failure"
 ```
 
 ## Notes / limitations

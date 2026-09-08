@@ -57,7 +57,7 @@ port(s).
   calls (e.g. `webui` talking to `ollama`) - there's no cross-app shared
   network, since nothing needs one without a central proxy.
 - **No dynamic lazy-start**: apps are started explicitly via
-  `catasophie up <app-id>` - simpler, at the cost of not auto-starting on
+  `make up ARGS="<app-id>"` - simpler, at the cost of not auto-starting on
   first request.
 
 ## Directory layout

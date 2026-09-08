@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stops the named app(s).
 # Usage:
-#   catasophie down llm-survival offline-maps
+#   make down ARGS="llm-survival offline-maps"
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 

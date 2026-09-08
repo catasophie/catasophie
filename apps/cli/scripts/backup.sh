@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Backs up app data (bind-mounted ./data + named podman volumes) and
-# .env files, so it can be rolled back to via `catasophie restore`. Used
-# automatically by `catasophie update` before each update.
+# .env files, so it can be rolled back to via `make restore`. Used
+# automatically by `make update` before each update.
 #
 # Usage:
-#   catasophie backup                    # backs up every installed app
-#   catasophie backup llm-survival        # just one app
-#   catasophie backup offline-maps --keep 3
+#   make backup                                    # backs up every installed app
+#   make backup ARGS="llm-survival"                 # just one app
+#   make backup ARGS="offline-maps --keep 3"
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 # shellcheck source=apps/cli/scripts/lib/common.sh

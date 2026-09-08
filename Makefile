@@ -1,30 +1,31 @@
-CLI := node apps/cli/bin/catasophie.js
+SHELL := /bin/bash
+SCRIPTS := apps/cli/scripts
 
-.PHONY: setup install uninstall up down update backup restore add-app
+.PHONY: help install uninstall up down update backup restore add-app
 
-setup: ## Optional: install the CLI's own deps (none currently - it's a thin dispatcher over apps/cli/scripts/*.sh)
-	npm install --prefix apps/cli
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | sort
 
-install: ## Interactively pick + install app(s). ARGS="<app-id>..." to skip the wizard
-	$(CLI) install $(ARGS)
+install: ## Install app(s), or pick interactively if none given: make install ARGS="offline-maps"
+	./$(SCRIPTS)/install.sh $(ARGS)
 
-uninstall: ## Uninstall app(s), or everything if ARGS is empty
-	$(CLI) uninstall $(ARGS)
+uninstall: ## Uninstall app(s), or everything if none given: make uninstall ARGS="offline-maps"
+	./$(SCRIPTS)/uninstall.sh $(ARGS)
 
 up: ## Start app(s): make up ARGS="offline-maps"
-	$(CLI) up $(ARGS)
+	./$(SCRIPTS)/up.sh $(ARGS)
 
 down: ## Stop app(s): make down ARGS="offline-maps"
-	$(CLI) down $(ARGS)
+	./$(SCRIPTS)/down.sh $(ARGS)
 
-update: ## git pull + update installed app(s) (or ARGS), with backup/rollback
-	$(CLI) update $(ARGS)
+update: ## git pull + update installed app(s): make update ARGS="offline-maps"
+	./$(SCRIPTS)/update.sh $(ARGS)
 
-backup: ## Back up installed app(s), or ARGS
-	$(CLI) backup $(ARGS)
+backup: ## Back up app data + .env: make backup ARGS="offline-maps"
+	./$(SCRIPTS)/backup.sh $(ARGS)
 
-restore: ## Restore an app from backup: make restore ARGS="offline-maps latest"
-	$(CLI) restore $(ARGS)
+restore: ## Restore an app from a backup: make restore ARGS="offline-maps"
+	./$(SCRIPTS)/restore.sh $(ARGS)
 
-add-app: ## Scaffold a new app: make add-app ARGS="my-tool 8000"
-	$(CLI) add-app $(ARGS)
+add-app: ## Scaffold a new app: make add-app ARGS="my-app 3020"
+	./$(SCRIPTS)/add-app.sh $(ARGS)

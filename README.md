@@ -15,20 +15,17 @@ monitor, inventory tracker, ...).
 
 ## Quick start
 
-Requires [Podman](https://podman.io/docs/installation), Bash 4+,
-[podman-compose](https://github.com/containers/podman-compose), and
-[Node.js](https://nodejs.org/) 18+ (only for the `catasophie` CLI
-wrapper - it just starts the shell scripts below, so you can skip Node
-entirely and run those scripts directly instead).
+Requires [Podman](https://podman.io/docs/installation), Bash 4+, `make`,
+and [podman-compose](https://github.com/containers/podman-compose).
 
 **Linux** (incl. Raspberry Pi): install `podman`, `podman-compose`, and
-`node` via your distro's package manager. Bash 4+ is standard on any
+`make` via your distro's package manager. Bash 4+ is standard on any
 current distro.
 
 **macOS**: install everything via Homebrew, then start the podman VM once:
 
 ```sh
-brew install podman podman-compose bash node
+brew install podman podman-compose bash make
 podman machine init
 podman machine start
 ```
@@ -41,14 +38,13 @@ macOS ships bash 3.2 at `/bin/bash`, which these scripts can't use
 $(brew --prefix)/bin/bash apps/cli/scripts/install.sh
 ```
 
-Then run the installer - either through the `catasophie` CLI:
+Then run the installer - either through `make`:
 
 ```sh
-node apps/cli/bin/catasophie.js install
-# or, once installed globally (npm install -g ./apps/cli): catasophie install
+make install
 ```
 
-or by calling the shell script it wraps directly:
+or by calling the shell script directly:
 
 ```sh
 ./apps/cli/scripts/install.sh
@@ -69,25 +65,25 @@ app's own README for its full list of ports:
 
 - [`apps/offline-maps/README.md`](apps/offline-maps/README.md)
 
-Stop everything with `catasophie down <app-ids...>` (or
+Stop everything with `make down ARGS="<app-ids...>"` (or
 `./apps/cli/scripts/down.sh <app-ids...>`). Update installed apps (and
-pull latest repo changes) with `catasophie update` (or
+pull latest repo changes) with `make update` (or
 `./apps/cli/scripts/update.sh`) - it automatically backs up each app
 before updating and rolls back automatically if the update leaves it
 unhealthy. See `docs/BACKUP_RESTORE.md` for manual backup/restore usage.
 
-Uninstall with `catasophie uninstall` (or
+Uninstall with `make uninstall` (or
 `./apps/cli/scripts/uninstall.sh`) - it asks for confirmation, then
 removes containers/volumes, data directories, backups, and `.env` files,
-restoring the repo to its state before `catasophie install` was ever run:
+restoring the repo to its state before `make install` was ever run:
 
 ```sh
-catasophie uninstall                       # everything (full reset)
-catasophie uninstall offline-maps           # just one app
-catasophie uninstall --keep-data            # keep data directories
-catasophie uninstall --keep-backups         # keep backups/
-catasophie uninstall --yes                  # skip confirmation
-catasophie uninstall --with-images          # also remove pulled images
+make uninstall                                         # everything (full reset)
+make uninstall ARGS="offline-maps"                      # just one app
+make uninstall ARGS="--keep-data"                       # keep data directories
+make uninstall ARGS="--keep-backups"                     # keep backups/
+make uninstall ARGS="--yes"                              # skip confirmation
+make uninstall ARGS="--with-images"                      # also remove pulled images
 ```
 
 Each app also ships its own `apps/<app-id>/uninstall.sh` (same flags),
@@ -135,9 +131,8 @@ podman machine ssh podman-machine-default 'sudo growpart /dev/vda 4 && sudo xfs_
 catasophie/
 ├── apps/
 │   ├── offline-maps/       # offline maps + basic navigation
-│   ├── _template/          # copy this (via `catasophie add-app`) to scaffold a new app
-│   └── cli/                # `catasophie` Node.js CLI - starts the shell scripts below
-│       ├── bin/catasophie.js  # thin dispatcher: `catasophie <command>` -> scripts/<command>.sh
+│   ├── _template/          # copy this (via `make add-app`) to scaffold a new app
+│   └── cli/                # shell scripts driving install/uninstall/up/down/update/backup/restore
 │       └── scripts/
 │           ├── install.sh           # root wizard: pick + install app(s)
 │           ├── uninstall.sh          # remove installed app(s), or everything
@@ -156,7 +151,7 @@ catasophie/
 ## Adding a new app
 
 ```sh
-catasophie add-app my-tool 8000
+make add-app ARGS="my-tool 8000"
 # or: ./apps/cli/scripts/add-app.sh my-tool 8000
 ```
 
