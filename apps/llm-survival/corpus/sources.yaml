@@ -17,6 +17,9 @@ sources:
     license: "Public domain (US government work)"
     sha256: ""
     ingest: knowledge   # goes into the Open WebUI knowledge base (RAG)
+    # NOTE (2026-09): archive.org intermittently returns 503 (rate
+    # limiting/overload) for this exact URL - usually transient, retry
+    # later if fetch.sh warns about it.
 
   - id: fema-are-you-ready
     title: "FEMA - Are You Ready? An In-depth Guide to Citizen Preparedness"
@@ -25,14 +28,24 @@ sources:
     license: "Public domain (US government work)"
     sha256: ""
     ingest: knowledge
+    # NOTE (2026-09): confirmed dead (404) - FEMA has reorganized/retired
+    # this page. Needs a replacement URL (check ready.gov or
+    # archive.org for a mirrored copy) - not yet found, contributions
+    # welcome.
 
   - id: wikimed
     title: "WikiMed Medical Encyclopedia (Kiwix ZIM)"
-    url: https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi.zim
+    url: https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi_2026-04.zim
     format: zim
     license: "CC BY-SA (Wikipedia content)"
     sha256: ""
     ingest: kiwix       # served directly via kiwix-serve, not chunked into RAG
+    # NOTE: Kiwix publishes dated snapshots (no stable "latest" alias for
+    # this file) - the exact filename above will eventually 404 as newer
+    # snapshots replace it. Check
+    # https://download.kiwix.org/zim/wikipedia/ for the current
+    # `wikipedia_en_medicine_maxi_*.zim` filename if this URL stops
+    # working, and update both this file and fetch.sh.
 
   - id: hesperian-where-there-is-no-doctor
     title: "Hesperian - Where There Is No Doctor"
@@ -44,3 +57,8 @@ sources:
       distributing this box beyond personal/household use.
     sha256: ""
     ingest: knowledge
+    # NOTE (2026-09): confirmed dead (404) - Hesperian has restructured
+    # their site. See https://hesperian.org/books-and-resources/where-there-is-no-doctor/
+    # for the current book page and find the direct PDF/download link
+    # (requires navigating their site - not a stable direct URL as of
+    # this check), then update this entry.

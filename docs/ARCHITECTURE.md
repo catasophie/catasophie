@@ -2,49 +2,51 @@
 
 ## Overview
 
-catasophie is a collection of independent, offline-capable apps that sit
-behind a single shared reverse proxy on a Podman network. There is
-intentionally no central dashboard/orchestrator process: each app is its
-own Podman Compose project, started and stopped independently, and
-discovered automatically by the proxy via labels declared in its own
-compose file.
+catasophie is a collection of independent, offline-capable apps. There
+is intentionally no central dashboard, orchestrator, or reverse proxy:
+each app is its own Podman Compose project, started and stopped
+independently, and reachable directly on its own published host
+port(s).
 
 ```
                   Host Device (Pi / Mini PC / Laptop)
  ┌───────────────────────────────────────────────────────────────────┐
- │                  Podman (network: catasophie)                     │
+ │                            Podman                                  │
  │                                                                     │
- │   ┌────────┐        ┌──────────┐                                  │
- │   │ proxy  │◄───────┤ landing  │  (root docker-compose.yml)         │
- │   │(Traefik)│       └──────────┘                                  │
- │   └───┬────┘                                                      │
- │       │ label-based auto-discovery (podman/docker provider)        │
- │       │                                                             │
- │   ┌───┴─────────────────┐   ┌────────────────────┐   ┌─────────┐  │
+ │   ┌─────────────────────┐   ┌────────────────────┐   ┌─────────┐  │
  │   │ apps/llm-survival    │   │ apps/offline-maps   │   │ apps/…  │  │
  │   │ ollama + webui +     │   │ osrm + tiles +      │   │         │  │
  │   │ kiwix                │   │ geocoder + web       │   │         │  │
- │   └─────────────────────┘   └────────────────────┘   └─────────┘  │
- └───────────────────────────────────────────────────────────────────┘
+ │   │ (own private network)│   │ (own private network)│   │         │  │
+ │   └──────────┬──────────┘   └──────────┬──────────┘   └─────────┘  │
+ └──────────────┼──────────────────────────┼──────────────────────────┘
+                │ :3001 (webui)            │ :3010 (web)
+                │ :3002 (kiwix)            │ :3011 (osrm)
+                │                          │ :3012 (tiles)
+                │                          │ :3013 (geocoder)
+                ▼                          ▼
+         http://<device-ip>:<port>/  (LAN or localhost)
 ```
 
 ## Request flow
 
 1. A client (phone/laptop) connects to the device's LAN/WiFi and browses
-   to `http://catasophie.local/`.
-2. Traefik (the single entrypoint) matches the request path against
-   routers declared via container labels and forwards it to the matching
-   app's service.
-3. Each app's compose file declares its own Traefik labels
-   (`traefik.http.routers.<name>.rule=PathPrefix(...)`) - Traefik's
-   Podman/Docker provider watches the shared network and picks these up
-   automatically, with no central proxy config file to edit.
+   directly to `http://<device-ip>:<port>/` for whichever app/service it
+   wants (e.g. `:3001` for the LLM chat UI, `:3010` for the maps
+   frontend).
+2. Each container publishes its port straight to the host - no routing,
+   discovery, or path-rewriting layer in between.
+3. Where a frontend needs to call sibling services (e.g. offline-maps'
+   static page calling its osrm/tiles/geocoder backends), it does so
+   directly by port, using a small `config.js` rendered from `.env` at
+   container start (see `apps/offline-maps/templates/config.js.template`).
 
 ## Why this design
 
-- **Independent apps, zero-touch proxy config**: adding, removing, or
-  updating an app never requires editing the proxy - only that app's own
-  compose file (labels + network membership).
+- **Independent apps, zero shared infrastructure**: adding, removing, or
+  updating an app never requires touching anything outside that app's
+  own folder - no proxy config, no shared network, no label conventions
+  to keep in sync.
 - **No auth layer in this first version**: this repo is intended for a
   device on a private/trusted LAN (e.g. its own WiFi hotspot). If you
   expose it more broadly, put an auth-capable reverse proxy or VPN in
@@ -52,9 +54,13 @@ compose file.
 - **Independent compose projects, not one big compose file**: keeps
   resource-heavy apps (LLM, maps) separately startable/stoppable on
   constrained hardware, and keeps each app's README/scripts self-contained.
-- **No dynamic lazy-start**: unlike a dashboard-managed setup, apps here
-  are started explicitly via `scripts/up.sh <app-id>` - simpler, at the
-  cost of not auto-starting on first request.
+- **Each app has its own private Podman network** (compose's default
+  per-project network) purely for its own internal container-to-container
+  calls (e.g. `webui` talking to `ollama`) - there's no cross-app shared
+  network, since nothing needs one without a central proxy.
+- **No dynamic lazy-start**: apps are started explicitly via
+  `scripts/up.sh <app-id>` - simpler, at the cost of not auto-starting on
+  first request.
 
 ## Directory layout
 

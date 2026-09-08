@@ -43,7 +43,9 @@ order. None of these are scaffolded yet - use `scripts/add-app.sh` and
 
 - **Power monitor** (laptop battery via `/sys/class/power_supply`, UPS via
   NUT, or a Pi HAT via I2C) - useful across every app, could be a small
-  status widget added to the landing page rather than its own "app".
-- **Auth in front of the proxy**, if this box is ever exposed beyond a
-  fully trusted LAN (see `docs/ARCHITECTURE.md`).
+  status widget/its own app publishing its own port.
+- **Auth**, per-app, if a box is ever exposed beyond a fully trusted LAN
+  (see `docs/ARCHITECTURE.md`) - each app is independent with no shared
+  proxy, so this would be added per-app (Open WebUI already has its own
+  login, for example).
 - **Backup/restore script** for each app's `data/` directory.

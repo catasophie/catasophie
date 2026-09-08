@@ -191,8 +191,8 @@ list_available_apps() {
 
 # === Backup / restore / rollback ===
 #
-# Backups live in backups/<app-id>/<timestamp>/ (root state uses the
-# pseudo-app-id "_root"). Each backup dir may contain:
+# Backups live in backups/<app-id>/<timestamp>/. Each backup dir may
+# contain:
 #   .env               - copy of the app's .env at backup time
 #   data.tar.gz          - tar of the app's bind-mounted ./data (if any)
 #   volume__<name>.tar    - podman volume export, one per named volume
@@ -205,8 +205,7 @@ list_available_apps() {
 BACKUPS_DIR="${CATASOPHIE_ROOT}/backups"
 
 # Prints "<app_id>_<volume-key>" for every top-level named volume declared
-# in apps/<app_id>/docker-compose.yml (root compose file if app_id is
-# "_root").
+# in apps/<app_id>/docker-compose.yml.
 app_volume_names() {
   local app_id="$1" compose_file project
   compose_file=$(_compose_file_for "$app_id")
@@ -221,24 +220,16 @@ app_volume_names() {
   done
 }
 
-# Returns the app's compose file path, or the root one for "_root".
+# Returns the app's compose file path.
 _compose_file_for() {
   local app_id="$1"
-  if [ "$app_id" = "_root" ]; then
-    echo "${CATASOPHIE_ROOT}/docker-compose.yml"
-  else
-    echo "${CATASOPHIE_ROOT}/apps/${app_id}/docker-compose.yml"
-  fi
+  echo "${CATASOPHIE_ROOT}/apps/${app_id}/docker-compose.yml"
 }
 
-# Returns the app's directory, or repo root for "_root".
+# Returns the app's directory.
 _app_dir_for() {
   local app_id="$1"
-  if [ "$app_id" = "_root" ]; then
-    echo "${CATASOPHIE_ROOT}"
-  else
-    echo "${CATASOPHIE_ROOT}/apps/${app_id}"
-  fi
+  echo "${CATASOPHIE_ROOT}/apps/${app_id}"
 }
 
 # Resolves the app's actual data directory: reads DATA_DIR from the
@@ -284,19 +275,14 @@ ensure_data_dir() {
 }
 
 # podman-compose's project name (used in container labels) defaults to
-# the compose file's directory name - "catasophie" for the root stack,
-# not the pseudo-id "_root" used elsewhere in this file.
+# the compose file's directory name - i.e. the app id itself.
 _project_name_for() {
   local app_id="$1"
-  if [ "$app_id" = "_root" ]; then
-    basename "$CATASOPHIE_ROOT"
-  else
-    echo "$app_id"
-  fi
+  echo "$app_id"
 }
 
-# Backs up one app's (or "_root"'s) .env, data dir (wherever DATA_DIR
-# currently points - see _data_dir_for), and named volumes into dest_dir.
+# Backs up one app's .env, data dir (wherever DATA_DIR currently points -
+# see _data_dir_for), and named volumes into dest_dir.
 # For offline-maps specifically, raw/ (the source OSM extract,
 # re-downloadable via import-region.sh) is excluded to keep backups
 # smaller/faster.

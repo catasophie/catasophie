@@ -17,6 +17,10 @@ prompt_if_unset DATA_DIR \
   "Directory for persistent data (blank = ./data here, or an absolute path e.g. an external drive mount)" \
   "" "$ENV_FILE"
 
+prompt_if_unset __PORT_VAR__ \
+  "Port to publish __APP_ID__ on (http://localhost:<port>/)" \
+  "__PORT__" "$ENV_FILE"
+
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
 
@@ -27,4 +31,4 @@ echo "Starting __APP_ID__..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d
 
 mark_installed __APP_ID__
-echo "== __APP_ID__ installed. Visit http://catasophie.local__URL_PATH__ =="
+echo "== __APP_ID__ installed. Visit http://localhost:${__PORT_VAR__:-__PORT__}/ =="

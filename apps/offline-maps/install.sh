@@ -44,6 +44,11 @@ prompt_if_unset DATA_DIR \
   "Directory for persistent data - osrm/tiles/photon (blank = ./data here, or an absolute path e.g. an external drive mount)" \
   "" "$ENV_FILE"
 
+prompt_if_unset MAPS_WEB_PORT "Port to publish the map frontend on" "3010" "$ENV_FILE"
+prompt_if_unset MAPS_OSRM_PORT "Port to publish the routing (osrm) service on" "3011" "$ENV_FILE"
+prompt_if_unset MAPS_TILES_PORT "Port to publish the tile server on" "3012" "$ENV_FILE"
+prompt_if_unset MAPS_GEOCODER_PORT "Port to publish the geocoder (address search) on" "3013" "$ENV_FILE"
+
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
 
@@ -65,4 +70,4 @@ echo "Starting osrm, tiles, geocoder, web..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d
 
 mark_installed offline-maps
-echo "== offline-maps installed. Visit http://catasophie.local/maps/ =="
+echo "== offline-maps installed. Visit http://localhost:${MAPS_WEB_PORT:-3010}/ =="

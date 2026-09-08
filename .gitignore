@@ -9,3 +9,4 @@ __pycache__/
 node_modules/
 .venv/
 backups/
+apps/offline-maps/web/config.js

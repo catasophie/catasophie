@@ -1,16 +1,11 @@
 # Example service - replace with your actual service(s).
 # Conventions (see docs/ADDING_AN_APP.md):
-#   - join the shared external "catasophie" network
-#   - do NOT publish ports to the host; only Traefik should reach you
+#   - publish your service directly on a host port (no reverse proxy) -
+#     pick a sensible default and make it .env-overridable, e.g.
+#     ${__PORT_VAR__:-__PORT__} (see install.sh)
 #   - persistent data goes under ${DATA_DIR:-./data} (gitignored) so it
 #     can optionally be redirected to an external drive via DATA_DIR in
 #     this app's .env (see install.sh)
-#   - add Traefik labels so the proxy auto-discovers you, no central
-#     proxy config changes required
-
-networks:
-  catasophie:
-    external: true
 
 services:
   __APP_ID__:
@@ -18,14 +13,6 @@ services:
     command: ["-text=replace me", "-listen=:__PORT__"]
     volumes:
       - ${DATA_DIR:-./data}:/data
-    networks:
-      - catasophie
+    ports:
+      - "${__PORT_VAR__:-__PORT__}:__PORT__"
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.__APP_ID__.rule=PathPrefix(`__URL_PATH__`)
-      - traefik.http.services.__APP_ID__.loadbalancer.server.port=__PORT__
-      # Strip the path prefix if your app doesn't expect it mounted at a
-      # sub-path (remove this middleware if your app is prefix-aware):
-      - traefik.http.middlewares.__APP_ID__-strip.stripprefix.prefixes=__URL_PATH__
-      - traefik.http.routers.__APP_ID__.middlewares=__APP_ID__-strip

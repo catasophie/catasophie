@@ -2,11 +2,17 @@
 #
 # Services:
 #   - osrm:       routing engine (car profile), serves /route requests
-#                 against a pre-built graph for ${MAP_REGION}
-#   - tiles:      tileserver-gl serving a pre-built .mbtiles for the region
+#                 against a pre-built graph for ${MAP_REGION} - published
+#                 on http://localhost:${MAPS_OSRM_PORT:-3011}/
+#   - tiles:      tileserver-gl serving a pre-built .mbtiles for the region -
+#                 published on http://localhost:${MAPS_TILES_PORT:-3012}/
 #   - geocoder:   Photon (offline address search) built from the same
-#                 region extract
-#   - web:        static MapLibre GL frontend (search + draw route)
+#                 region extract - published on
+#                 http://localhost:${MAPS_GEOCODER_PORT:-3013}/
+#   - web:        static MapLibre GL frontend (search + draw route),
+#                 published on http://localhost:${MAPS_WEB_PORT:-3010}/ -
+#                 calls the three services above directly by port (see
+#                 templates/config.js.template)
 #
 # Run scripts/import-region.sh once (with MAP_REGION set in .env) before
 # starting these services - they expect data already present under
@@ -14,70 +20,46 @@
 # but can be set to an absolute path (e.g. an external drive mount) in
 # this app's .env.
 
-networks:
-  catasophie:
-    external: true
-
 services:
   osrm:
     image: docker.io/osrm/osrm-backend:latest
     command: ["osrm-routed", "--algorithm", "mld", "/data/region.osrm"]
     volumes:
       - ${DATA_DIR:-./data}/osrm:/data
-    networks:
-      - catasophie
+    ports:
+      - "${MAPS_OSRM_PORT:-3011}:5000"
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.maps-osrm.rule=PathPrefix(`/maps/route`)
-      - traefik.http.services.maps-osrm.loadbalancer.server.port=5000
-      - traefik.http.middlewares.maps-osrm-strip.stripprefix.prefixes=/maps/route
-      - traefik.http.routers.maps-osrm.middlewares=maps-osrm-strip
 
   tiles:
     image: docker.io/maptiler/tileserver-gl:latest
     command: ["--config", "/data/config.json"]
     volumes:
       - ${DATA_DIR:-./data}/tiles:/data
-    networks:
-      - catasophie
+    ports:
+      - "${MAPS_TILES_PORT:-3012}:8080"
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.maps-tiles.rule=PathPrefix(`/maps/tiles`)
-      - traefik.http.services.maps-tiles.loadbalancer.server.port=8080
-      - traefik.http.middlewares.maps-tiles-strip.stripprefix.prefixes=/maps/tiles
-      - traefik.http.routers.maps-tiles.middlewares=maps-tiles-strip
 
   geocoder:
     image: docker.io/rtuszik/photon-docker:latest
     volumes:
       - ${DATA_DIR:-./data}/photon:/photon/data
-    networks:
-      - catasophie
+    ports:
+      - "${MAPS_GEOCODER_PORT:-3013}:2322"
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.maps-geocoder.rule=PathPrefix(`/maps/search`)
-      - traefik.http.services.maps-geocoder.loadbalancer.server.port=2322
-      - traefik.http.middlewares.maps-geocoder-strip.stripprefix.prefixes=/maps/search
-      - traefik.http.routers.maps-geocoder.middlewares=maps-geocoder-strip
 
   web:
     image: docker.io/library/nginx:1.27-alpine
+    environment:
+      # nginx's built-in docker-entrypoint.d/20-envsubst-on-templates.sh
+      # renders templates/config.js.template (mounted below) into
+      # config.js using these - no custom entrypoint script needed.
+      - NGINX_ENVSUBST_OUTPUT_DIR=/usr/share/nginx/html
+      - MAPS_OSRM_PORT=${MAPS_OSRM_PORT:-3011}
+      - MAPS_TILES_PORT=${MAPS_TILES_PORT:-3012}
+      - MAPS_GEOCODER_PORT=${MAPS_GEOCODER_PORT:-3013}
     volumes:
-      - ./web:/usr/share/nginx/html:ro
-    networks:
-      - catasophie
+      - ./web:/usr/share/nginx/html
+      - ./templates/config.js.template:/etc/nginx/templates/config.js.template:ro
+    ports:
+      - "${MAPS_WEB_PORT:-3010}:80"
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.maps-web.rule=PathPrefix(`/maps/`)
-      # No explicit priority - Traefik auto-prioritizes by rule
-      # specificity, so the more specific /maps/route, /maps/tiles,
-      # /maps/search routers (below) naturally win over this one, and
-      # this one naturally wins over the root landing page's `/`. Do
-      # NOT hardcode a priority here (see docs/ADDING_AN_APP.md).
-      - traefik.http.services.maps-web.loadbalancer.server.port=80
-      - traefik.http.middlewares.maps-web-strip.stripprefix.prefixes=/maps
-      - traefik.http.routers.maps-web.middlewares=maps-web-strip

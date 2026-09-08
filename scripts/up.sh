@@ -1,30 +1,19 @@
 #!/usr/bin/env bash
-# Creates the shared network (if missing) and starts the core proxy stack.
+# Starts the named app(s), each its own independent Podman Compose
+# project reachable directly on its own published host port(s) - no
+# shared network or reverse proxy involved.
 # Usage:
-#   ./scripts/up.sh              # proxy only
-#   ./scripts/up.sh llm-survival offline-maps   # proxy + selected apps
+#   ./scripts/up.sh llm-survival offline-maps
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # shellcheck source=lib/common.sh
 source "scripts/lib/common.sh"
 
-if ! podman network exists catasophie 2>/dev/null; then
-  echo "Creating podman network 'catasophie'..."
-  podman network create catasophie
+if [ "$#" -eq 0 ]; then
+  echo "usage: $0 <app-id> [app-id...]" >&2
+  echo "  (see docs/ADDING_AN_APP.md or ./scripts/install.sh for the interactive wizard)" >&2
+  exit 1
 fi
-
-if [ ! -f .env ]; then
-  echo "No .env found, copying .env.example -> .env"
-  cp .env.example .env
-fi
-
-ensure_podman_sock
-
-# shellcheck disable=SC1091
-set -a; source .env; set +a
-
-echo "Starting core proxy..."
-podman-compose up -d
 
 for app in "$@"; do
   dir="apps/$app"
@@ -39,4 +28,4 @@ for app in "$@"; do
   podman-compose -f "$dir/docker-compose.yml" up -d
 done
 
-echo "Done. Visit http://${CATASOPHIE_HOSTNAME:-catasophie.local}:${PROXY_HTTP_PORT:-8080}/ (or http://<device-ip>:${PROXY_HTTP_PORT:-8080}/)"
+echo "Done. See each app's README for its port(s), or check its docker-compose.yml."

@@ -5,12 +5,18 @@ from locally stored OpenStreetMap data - no internet required once set up.
 
 ## Components
 
-- **osrm** - routing engine ([Project OSRM](https://project-osrm.org/))
+- **osrm** - routing engine ([Project OSRM](https://project-osrm.org/)) -
+  published on `http://localhost:${MAPS_OSRM_PORT:-3011}/`
 - **tiles** - [tileserver-gl](https://github.com/maptiler/tileserver-gl)
-  serving a pre-built vector tileset for the chosen region
-- **geocoder** - [Photon](https://github.com/komoot/photon) address search
+  serving a pre-built vector tileset for the chosen region - published on
+  `http://localhost:${MAPS_TILES_PORT:-3012}/`
+- **geocoder** - [Photon](https://github.com/komoot/photon) address search -
+  published on `http://localhost:${MAPS_GEOCODER_PORT:-3013}/`
 - **web** - a minimal static [MapLibre GL](https://maplibre.org/) page
-  (search start/end, request a route, draw it)
+  (search start/end, request a route, draw it) - published on
+  `http://localhost:${MAPS_WEB_PORT:-3010}/`, calls the three services
+  above directly by port (no reverse proxy in front - see
+  `templates/config.js.template`)
 
 ## One-time setup: import a region
 
@@ -49,7 +55,9 @@ disk for anything larger than a small country/state.
 podman-compose -f apps/offline-maps/docker-compose.yml up -d
 ```
 
-Visit `http://catasophie.local/maps/`.
+Visit `http://localhost:3010/` (or whatever you set `MAPS_WEB_PORT` to -
+also reachable at `http://<device-ip>:3010/` from another device on the
+LAN).
 
 ## Notes / known limitations of this first version
 
@@ -61,3 +69,6 @@ Visit `http://catasophie.local/maps/`.
   Lua profile and exposing another OSRM service/route.
 - Changing region later: re-run `import-region.sh` with a new
   `MAP_REGION` (old data in `data/` is not automatically cleaned up).
+- Changing the osrm/tiles/geocoder ports after the frontend has already
+  loaded once: hard-refresh the page so it re-fetches `config.js` (it's
+  regenerated from `.env` each time the `web` container starts).

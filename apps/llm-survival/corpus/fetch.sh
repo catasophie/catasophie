@@ -18,10 +18,11 @@ mkdir -p data/raw
 entries=(
   "fm21-76-survival-manual|https://archive.org/download/FM21-76-1/FM21-76-1.pdf|fm21-76-survival-manual.pdf"
   "fema-are-you-ready|https://www.fema.gov/pdf/areyouready/areyouready_full.pdf|fema-are-you-ready.pdf"
-  "wikimed|https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi.zim|wikimed.zim"
+  "wikimed|https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi_2026-04.zim|wikimed.zim"
   "hesperian-where-there-is-no-doctor|https://hesperian.org/wp-content/uploads/pdf/en_wtnd_2018/en_wtnd_2018_full.pdf|hesperian-where-there-is-no-doctor.pdf"
 )
 
+failed=()
 for entry in "${entries[@]}"; do
   IFS='|' read -r id url filename <<< "$entry"
   dest="data/raw/$filename"
@@ -36,6 +37,7 @@ for entry in "${entries[@]}"; do
   else
     echo "warn: failed to download $id ($url) - check the URL is still valid" >&2
     rm -f "$dest.part"
+    failed+=("$id")
   fi
 done
 
@@ -54,4 +56,11 @@ if [ -f data/raw/wikimed.zim ]; then
   echo "Restart the kiwix service to pick up the new library: podman-compose -f ../docker-compose.yml restart kiwix"
 fi
 
-echo "Done. PDFs are in data/raw/ - run ./ingest.sh to load them into Open WebUI's knowledge base."
+echo
+if [ "${#failed[@]}" -eq 0 ]; then
+  echo "Done - all sources fetched. PDFs are in data/raw/ - run ./ingest.sh to load them into Open WebUI's knowledge base."
+else
+  echo "Done, but ${#failed[@]} source(s) failed: ${failed[*]}"
+  echo "See corpus/sources.yaml for notes on known-stale URLs and where to look for replacements."
+  echo "Whatever did download is in data/raw/ - run ./ingest.sh to load it into Open WebUI's knowledge base."
+fi

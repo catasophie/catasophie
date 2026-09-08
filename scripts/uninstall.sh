@@ -3,9 +3,9 @@
 # (see docs/ADDING_AN_APP.md for the uninstall.sh contract). With no
 # app-ids given, uninstalls *every app* (not just ones .installed
 # happens to record - that marker can be stale, e.g. if install.sh
-# crashed before reaching mark_installed) plus the core proxy stack,
-# shared network, backups/, and root .env/.installed marker - restoring
-# the repo to its state before scripts/install.sh was ever run.
+# crashed before reaching mark_installed) plus backups/ and the
+# .installed marker - restoring the repo to its state before
+# scripts/install.sh was ever run.
 #
 # Destructive - asks for confirmation unless --yes is passed.
 #
@@ -58,10 +58,8 @@ else
   echo "This will stop and remove all containers/volumes for: ${targets[*]}"
 fi
 if [ "$full_uninstall" -eq 1 ]; then
-  echo "  - stop and remove the core proxy stack"
-  echo "  - remove the shared 'catasophie' podman network"
-  [ "$KEEP_DATA" = "1" ] || echo "  - remove the root .env"
   [ "$KEEP_BACKUPS" = "1" ] || echo "  - remove backups/ entirely"
+  echo "  - remove the .installed marker"
 fi
 [ "$KEEP_DATA" = "1" ] && echo "(--keep-data: app data directories will be preserved)"
 [ "$KEEP_BACKUPS" = "1" ] && echo "(--keep-backups: backups will be preserved)"
@@ -90,25 +88,10 @@ for id in "${targets[@]}"; do
 done
 
 if [ "$full_uninstall" -eq 1 ]; then
-  echo
-  echo "Stopping core proxy..."
-  if [ "$WITH_IMAGES" = "1" ]; then
-    podman-compose down -v --rmi all --remove-orphans || true
-  else
-    podman-compose down -v --remove-orphans || true
-  fi
-
-  echo "Removing shared network 'catasophie'..."
-  podman network rm catasophie >/dev/null 2>&1 || true
-
   if [ "$KEEP_BACKUPS" != "1" ]; then
+    echo
     echo "Removing backups/..."
     rm -rf backups
-  fi
-
-  if [ "$KEEP_DATA" != "1" ]; then
-    echo "Removing root .env..."
-    rm -f .env
   fi
 
   rm -f .installed

@@ -6,24 +6,14 @@ purely on model weights.
 
 ## Components
 
-- **ollama** - runs the model (`${OLLAMA_MODEL}`, default `llama3.2:3b`)
+- **ollama** - runs the model (`${OLLAMA_MODEL}`, default `llama3.2:3b`) -
+  internal only, not reachable directly
 - **webui** ([Open WebUI](https://github.com/open-webui/open-webui)) - chat
-  frontend with built-in document/knowledge-base RAG + citations. Routed
-  by **hostname** (`llm.catasophie.local`), not a path prefix - Open
-  WebUI's frontend has no configurable base path, so path-based routing
-  breaks its asset loading.
+  frontend with built-in document/knowledge-base RAG + citations.
+  Published on `http://localhost:${LLM_WEBUI_PORT:-3001}/`
 - **kiwix** - serves the WikiMed offline medical encyclopedia as a
-  browsable supplementary reference at `/llm/kiwix/` (path-based routing
-  works fine here since kiwix-serve is proxied with a strip-prefix)
-
-## One-time setup: hostname
-
-Add this to `/etc/hosts` on any machine you'll browse from, pointing at
-the box's IP (same as you already do for `catasophie.local`):
-
-```
-<box-ip>  llm.catasophie.local
-```
+  browsable supplementary reference, published on
+  `http://localhost:${LLM_KIWIX_PORT:-3002}/`
 
 ## First run
 
@@ -33,8 +23,9 @@ the box's IP (same as you already do for `catasophie.local`):
 
 (or `podman-compose -f apps/llm-survival/docker-compose.yml up -d` by
 hand). This pulls the model (`ollama-pull` runs once and exits) and
-starts Open WebUI, reachable at `http://llm.catasophie.local:8080/`
-(replace `8080` with your `PROXY_HTTP_PORT` if you changed it). Create
+starts Open WebUI, reachable at `http://localhost:3001/` (or whatever
+you set `LLM_WEBUI_PORT` to - also reachable at
+`http://<device-ip>:3001/` from another device on the LAN). Create
 the first account there (it becomes the admin) and generate an API key
 under **Settings -> Account -> API Keys** - `install.sh` will prompt you
 for it.
@@ -44,20 +35,9 @@ for it.
 ```sh
 cd apps/llm-survival
 ./corpus/fetch.sh                                  # downloads PDFs + WikiMed ZIM into corpus/data/raw/
-OPEN_WEBUI_URL=http://llm.catasophie.local:8080 \
+OPEN_WEBUI_URL=http://localhost:3001 \
 OPEN_WEBUI_API_KEY=sk-... \
 ./ingest.sh                                        # uploads PDFs into an Open WebUI knowledge collection
-```
-
-If `llm.catasophie.local` isn't resolvable from where you're running
-`ingest.sh` (e.g. running it directly on the box before setting up
-`/etc/hosts` there too), use the Host-header form instead:
-
-```sh
-OPEN_WEBUI_URL=http://localhost:8080 \
-OPEN_WEBUI_HOST_HEADER=llm.catasophie.local \
-OPEN_WEBUI_API_KEY=sk-... \
-./ingest.sh
 ```
 
 See `corpus/sources.yaml` for the list of sources and their licenses -

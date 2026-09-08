@@ -8,7 +8,6 @@
 #   ./scripts/restore.sh llm-survival                  # restores latest
 #   ./scripts/restore.sh llm-survival 2026-09-07T20-30-00Z
 #   ./scripts/restore.sh offline-maps latest --yes
-#   ./scripts/restore.sh _root                          # root proxy state
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # shellcheck source=lib/common.sh

@@ -2,8 +2,7 @@
 
 ## What gets backed up
 
-For each app (or the core proxy stack, referred to as `_root`),
-`scripts/backup.sh` captures:
+For each app, `scripts/backup.sh` captures:
 
 - `.env` - the app's configuration
 - data dir - wherever `DATA_DIR` in the app's `.env` currently points
@@ -31,14 +30,13 @@ with `--keep N`.
 ## Manual usage
 
 ```sh
-./scripts/backup.sh                       # back up root + every installed app
+./scripts/backup.sh                       # back up every installed app
 ./scripts/backup.sh llm-survival           # just one app
 ./scripts/backup.sh --keep 3 offline-maps  # override retention
 
 ./scripts/restore.sh llm-survival                    # restore latest backup (asks to confirm)
 ./scripts/restore.sh llm-survival 2026-09-07T20-30-00Z  # restore a specific timestamp
 ./scripts/restore.sh offline-maps latest --yes        # skip confirmation
-./scripts/restore.sh _root                             # restore root proxy state
 ```
 
 `restore.sh` stops the app, replaces `.env`/data/volumes from the
@@ -54,7 +52,7 @@ restoring).
 
 ## Automatic backup + rollback during updates
 
-`scripts/update.sh` wraps every app update (and the core proxy) with:
+`scripts/update.sh` wraps every app update with:
 
 1. **Backup** - `backup_app` before touching anything (skip with `--no-backup`, not recommended)
 2. **Image snapshot** - records the currently-running image ID for each service
@@ -68,8 +66,8 @@ restoring).
    - recreates containers again, now pinned to the old image
    - reports whether the rollback itself left the app healthy
 
-By default, a failure doesn't stop the rest of the run - other
-apps/the proxy still get updated, and failures are summarized at the
+By default, a failure doesn't stop the rest of the run - other apps
+still get updated, and failures are summarized at the
 end. Pass `--stop-on-failure` to abort immediately instead.
 
 ```sh

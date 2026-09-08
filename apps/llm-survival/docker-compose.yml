@@ -2,11 +2,13 @@
 #
 # Services:
 #   - ollama:    model runtime (OpenAI-compatible API), pulls ${OLLAMA_MODEL}
-#                on first start
+#                on first start - internal only, not published to the host
 #   - webui:     Open WebUI - chat frontend with built-in document/RAG
-#                knowledge-base support (citations against uploaded docs)
+#                knowledge-base support (citations against uploaded docs) -
+#                published on http://localhost:${LLM_WEBUI_PORT:-3001}/
 #   - kiwix:     serves the WikiMed offline encyclopedia ZIM as a browsable
-#                supplementary reference (not part of the RAG pipeline)
+#                supplementary reference (not part of the RAG pipeline) -
+#                published on http://localhost:${LLM_KIWIX_PORT:-3002}/
 #
 # Curated corpus (see corpus/sources.yaml + corpus/fetch.sh) is ingested
 # into Open WebUI's knowledge base via ingest.sh - run that after fetch.sh
@@ -17,17 +19,11 @@
 # but can be set to an absolute path (e.g. an external drive mount) in
 # this app's .env. See install.sh / README.md.
 
-networks:
-  catasophie:
-    external: true
-
 services:
   ollama:
     image: docker.io/ollama/ollama:latest
     volumes:
       - ${DATA_DIR:-./data}/ollama:/root/.ollama
-    networks:
-      - catasophie
     restart: unless-stopped
     # No GPU passthrough configured by default - add `deploy.resources` /
     # `devices` here if you have an NVIDIA GPU + nvidia-container-toolkit.
@@ -36,8 +32,6 @@ services:
     image: docker.io/ollama/ollama:latest
     depends_on:
       - ollama
-    networks:
-      - catasophie
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -54,31 +48,15 @@ services:
       - WEBUI_AUTH=true
     volumes:
       - ${DATA_DIR:-./data}/webui:/app/backend/data
-    networks:
-      - catasophie
+    ports:
+      - "${LLM_WEBUI_PORT:-3001}:8080"
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      # Host-based (not PathPrefix) routing: Open WebUI's frontend embeds
-      # root-relative asset paths (/static/..., /_app/...) with no
-      # configurable base path, so mounting it under /llm/ breaks asset
-      # loading (browser requests bypass the /llm/ prefix entirely). Add
-      # "llm.catasophie.local" (or your CATASOPHIE_HOSTNAME equivalent)
-      # to /etc/hosts pointing at this box - see README.
-      - traefik.http.routers.llm-webui.rule=Host(`llm.catasophie.local`)
-      - traefik.http.services.llm-webui.loadbalancer.server.port=8080
 
   kiwix:
     image: ghcr.io/kiwix/kiwix-serve:latest
     command: ["--library", "/data/library.xml"]
     volumes:
       - ${DATA_DIR:-./data}/kiwix:/data
-    networks:
-      - catasophie
+    ports:
+      - "${LLM_KIWIX_PORT:-3002}:8080"
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.llm-kiwix.rule=PathPrefix(`/llm/kiwix/`)
-      - traefik.http.services.llm-kiwix.loadbalancer.server.port=8080
-      - traefik.http.middlewares.llm-kiwix-strip.stripprefix.prefixes=/llm/kiwix
-      - traefik.http.routers.llm-kiwix.middlewares=llm-kiwix-strip

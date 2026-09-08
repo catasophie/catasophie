@@ -20,6 +20,14 @@ prompt_if_unset DATA_DIR \
   "Directory for persistent data - ollama models, webui data, kiwix (blank = ./data here, or an absolute path e.g. an external drive mount)" \
   "" "$ENV_FILE"
 
+prompt_if_unset LLM_WEBUI_PORT \
+  "Port to publish Open WebUI on (http://localhost:<port>/)" \
+  "3001" "$ENV_FILE"
+
+prompt_if_unset LLM_KIWIX_PORT \
+  "Port to publish Kiwix (WikiMed reference) on (http://localhost:<port>/)" \
+  "3002" "$ENV_FILE"
+
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
 
@@ -38,16 +46,11 @@ fi
 echo "Starting ollama, ollama-pull, webui, kiwix..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d
 
-# webui is routed by Host (not PathPrefix - see docker-compose.yml), so
-# hit it through the proxy with an explicit Host header rather than
-# relying on /etc/hosts already being configured for this readiness check.
-proxy_port=8080
-[ -f "${APP_DIR}/../../.env" ] && proxy_port=$(grep -E '^PROXY_HTTP_PORT=' "${APP_DIR}/../../.env" 2>/dev/null | cut -d'=' -f2-)
-proxy_port="${proxy_port:-8080}"
+webui_port="${LLM_WEBUI_PORT:-3001}"
 
 echo "Waiting for Open WebUI to come up..."
 for _ in $(seq 1 60); do
-  if curl -fsS -o /dev/null -H "Host: llm.catasophie.local" "http://localhost:${proxy_port}/" 2>/dev/null; then
+  if curl -fsS -o /dev/null "http://localhost:${webui_port}/" 2>/dev/null; then
     break
   fi
   sleep 2
@@ -59,9 +62,7 @@ else
   cat <<EOF
 
 Open WebUI needs a one-time manual step (no API for this part):
-  0. Add "llm.catasophie.local" to /etc/hosts, pointing at this box's IP
-     (same as you did for catasophie.local, if you haven't already)
-  1. Open http://llm.catasophie.local:${proxy_port}/
+  1. Open http://localhost:${webui_port}/ (or http://<device-ip>:${webui_port}/ from another device on the LAN)
   2. Create the first account - it becomes the admin
   3. Go to Settings -> Account -> API Keys, and create a key
 EOF
@@ -74,8 +75,7 @@ set -a; source "$ENV_FILE"; set +a
 if [ -n "${OPEN_WEBUI_API_KEY:-}" ]; then
   if confirm "Fetch + ingest the curated corpus now? (downloads several hundred MB-GB)"; then
     "${APP_DIR}/corpus/fetch.sh"
-    OPEN_WEBUI_URL="http://localhost:${proxy_port}" \
-    OPEN_WEBUI_HOST_HEADER="llm.catasophie.local" \
+    OPEN_WEBUI_URL="http://localhost:${webui_port}" \
     OPEN_WEBUI_API_KEY="${OPEN_WEBUI_API_KEY}" \
     "${APP_DIR}/ingest.sh"
   else
@@ -86,4 +86,4 @@ else
 fi
 
 mark_installed llm-survival
-echo "== llm-survival installed. Visit http://llm.catasophie.local:${proxy_port}/ (add it to /etc/hosts first) =="
+echo "== llm-survival installed. Visit http://localhost:${webui_port}/ =="

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Updates the repo (git pull) and pulls+recreates containers for the
-# core proxy plus every installed app (or just the ones named as args).
-# Before touching each app, takes a backup (scripts/backup.sh) and
-# snapshots its current image IDs; if the update leaves any container
-# unhealthy, automatically restores the backup and re-pins the previous
-# image, then recreates containers from it (full rollback).
+# Updates the repo (git pull) and pulls+recreates containers for every
+# installed app (or just the ones named as args). Before touching each
+# app, takes a backup (scripts/backup.sh) and snapshots its current
+# image IDs; if the update leaves any container unhealthy, automatically
+# restores the backup and re-pins the previous image, then recreates
+# containers from it (full rollback).
 #
 # Usage:
 #   ./scripts/update.sh                       # update everything installed
@@ -93,12 +93,6 @@ update_one() {
 }
 
 failures=()
-
-echo
-if update_one "_root" "docker-compose.yml"; then :; else
-  failures+=("_root (proxy)")
-  [ "$stop_on_failure" -eq 1 ] && { echo "Stopping due to --stop-on-failure." >&2; exit 1; }
-fi
 
 if [ "${#targets[@]}" -eq 0 ]; then
   mapfile -t targets < <(list_installed)

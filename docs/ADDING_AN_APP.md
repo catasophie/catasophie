@@ -1,21 +1,30 @@
 # Adding an App
 
 Every app lives in `apps/<app-id>/` and is a fully independent Podman
-Compose project.
+Compose project, reachable directly on its own published port(s) - no
+shared proxy or network involved.
 
 ```sh
-./scripts/add-app.sh my-tool /my-tool/ 8000
+./scripts/add-app.sh my-tool 8000
 ```
 
-This copies `apps/_template/` to `apps/my-tool/` and substitutes the id,
-URL path, and port into the compose file and README.
+This copies `apps/_template/` to `apps/my-tool/` and substitutes the id
+and default port into the compose file, install/uninstall scripts,
+`.env.example`, and README (including deriving a valid `MY_TOOL_PORT`
+env var name from the id).
 
 ## Contract
 
-- **Network**: join the shared external `catasophie` network (already
-  created by `scripts/up.sh`).
-- **No host ports**: don't publish ports directly to the host - only
-  Traefik should be able to reach your service, over the shared network.
+- **Published port(s)**: publish your service(s) directly on the host,
+  with a sensible default that's overridable via `.env` (mirroring the
+  existing apps' convention, e.g. `LLM_WEBUI_PORT`, `MAPS_OSRM_PORT`):
+  ```yaml
+  ports:
+    - "${MY_TOOL_PORT:-8000}:8000"
+  ```
+  Pick a default port that doesn't collide with existing apps (see each
+  app's `.env.example` for what's already taken). No labels, discovery,
+  or central config needed - just a normal compose `ports:` mapping.
 - **Data**: persistent data goes under `${DATA_DIR:-./data}/` inside the
   app folder (the default `./data` is already gitignored via the root
   `**/data/` pattern), or as named volumes declared in a standard
@@ -28,44 +37,20 @@ URL path, and port into the compose file and README.
   `scripts/backup.sh`/`restore.sh` - no extra config needed, as long as
   volume names follow the normal top-level `volumes:` convention (see
   `docs/BACKUP_RESTORE.md`).
-- **Traefik labels**: every routable service needs, at minimum:
-  ```yaml
-  labels:
-    - traefik.enable=true
-    - traefik.http.routers.<app-id>.rule=PathPrefix(`/<app-id>/`)
-    - traefik.http.services.<app-id>.loadbalancer.server.port=<internal-port>
-  ```
-  If your app doesn't expect to be mounted under a path prefix, add a
-  strip-prefix middleware (see `apps/_template/docker-compose.yml` for the
-  pattern) so it sees requests as if it were mounted at `/`. **Stripping
-  the prefix only works if the app's HTML/JS references its own assets
-  with relative paths.** Many SPA frontends (Open WebUI included) hardcode
-  root-relative asset paths (`/static/...`) with no configurable base
-  path - stripping the prefix on the way in doesn't fix that, because the
-  browser still requests `/static/...` at the domain root, missing the
-  path prefix entirely. If your app does this and has no base-path env
-  var, use **Host-based routing instead**:
-  ```yaml
-  - traefik.http.routers.<app-id>.rule=Host(`<app-id>.catasophie.local`)
-  ```
-  and document that users need to add `<app-id>.catasophie.local` to
-  `/etc/hosts` (see `apps/llm-survival/docker-compose.yml` for a real
-  example - Open WebUI required this).
-
-  **Do not set an explicit `traefik.http.routers.<name>.priority` label**
-  unless you have a specific conflict to resolve between two routers of
-  equal rule length. Traefik auto-computes priority from rule
-  specificity (longer/more specific `PathPrefix` naturally outranks
-  shorter ones, so any `/your-app/...` route always wins over the root
-  landing page's catch-all `/`). Hardcoding equal priorities on two
-  routers makes Traefik's tie-break arbitrary and can cause every request
-  to silently fall through to the wrong service (this happened once with
-  the landing page and `offline-maps`'s web router both set to
-  `priority=1` - every app path 404'd against the landing container until
-  the hardcoded priorities were removed).
-- **README.md**: document what the app does, how to run it, and any
-  one-time setup (model downloads, data imports, etc.) - keep heavy setup
-  steps as explicit scripts, not something that runs automatically.
+- **Multiple services calling each other**: if your app has a frontend
+  that needs to call sibling backend services directly (since there's no
+  proxy to unify them under one origin/path), have it learn their ports
+  at runtime rather than hardcoding them. See
+  `apps/offline-maps/templates/config.js.template` +
+  `docker-compose.yml`'s `web` service for a working pattern: nginx's
+  built-in `docker-entrypoint.d/20-envsubst-on-templates.sh` renders a
+  template into `config.js` from environment variables at container
+  start, and the page reads `window.MAPS_CONFIG.<x>Port` +
+  `location.hostname` to build each backend's URL.
+- **README.md**: document what the app does, how to run it, its
+  published port(s), and any one-time setup (model downloads, data
+  imports, etc.) - keep heavy setup steps as explicit scripts, not
+  something that runs automatically.
 - **.env.example**: if your app needs configuration, provide an
   `.env.example` in the app folder; `scripts/up.sh` copies it to `.env` on
   first start if missing.
@@ -85,7 +70,7 @@ URL path, and port into the compose file and README.
   - must be safe to re-run (idempotent)
 
   `apps/_template/install.sh` has a working skeleton to copy from -
-  `scripts/add-app.sh` scaffolds it automatically with the id/path/port
+  `scripts/add-app.sh` scaffolds it automatically with the id/port
   substituted in.
 - **uninstall.sh**: every app must also ship an `uninstall.sh` (called
   by `scripts/uninstall.sh`'s wizard, and directly runnable per-app).
@@ -108,10 +93,8 @@ URL path, and port into the compose file and README.
 
 ## Registering it
 
-Add a link to `proxy/landing/index.html` so it shows up on the landing
-page. Nothing else needs to change - the proxy discovers the new router
-automatically once the app's container is running on the `catasophie`
-network.
+Nothing to register centrally - just document the port(s) in your app's
+own README. There's no shared landing page or proxy config to update.
 
 ## Starting/stopping
 

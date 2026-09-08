@@ -4,7 +4,7 @@
 # automatically by scripts/update.sh before each update.
 #
 # Usage:
-#   ./scripts/backup.sh                    # backs up root + every installed app
+#   ./scripts/backup.sh                    # backs up every installed app
 #   ./scripts/backup.sh llm-survival        # just one app
 #   ./scripts/backup.sh --keep 3 offline-maps
 set -euo pipefail
@@ -24,10 +24,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "${#targets[@]}" -eq 0 ]; then
-  targets=("_root")
-  while IFS= read -r id; do
-    targets+=("$id")
-  done < <(list_installed)
+  mapfile -t targets < <(list_installed)
 fi
 
 timestamp=$(date -u +%Y-%m-%dT%H-%M-%SZ)

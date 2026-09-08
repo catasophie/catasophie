@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Root install wizard: lets you pick which app(s) to install. Ensures the
-# core network + reverse proxy are running, then runs each selected app's
-# own install.sh (see docs/ADDING_AN_APP.md for the install.sh contract).
+# Root install wizard: lets you pick which app(s) to install, then runs
+# each selected app's own install.sh (see docs/ADDING_AN_APP.md for the
+# install.sh contract). Each app is fully independent and reachable
+# directly on its own published port(s) - no shared proxy involved.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # shellcheck source=lib/common.sh
@@ -67,8 +68,6 @@ fi
 
 echo "Selected: ${selected[*]}"
 echo
-echo "Starting core network + reverse proxy..."
-./scripts/up.sh
 
 results=()
 for id in "${selected[@]}"; do
@@ -89,4 +88,4 @@ for r in "${results[@]}"; do
   echo "  $r"
 done
 echo
-echo "Visit http://${CATASOPHIE_HOSTNAME:-catasophie.local}/ to see the landing page."
+echo "See each app's README for its port(s), or check its docker-compose.yml."
