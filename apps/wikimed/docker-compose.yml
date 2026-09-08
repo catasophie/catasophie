@@ -1,0 +1,26 @@
+# Offline encyclopedia / reference content via Kiwix (kiwix-serve),
+# serving whatever ZIM file(s) scripts/download-zim.sh fetched into
+# ${DATA_DIR:-./data}/zims/ - published on
+# http://localhost:${WIKIMED_PORT:-3020}/
+#
+# Run scripts/download-zim.sh once (see install.sh, or run it directly)
+# before starting this service - it expects at least one .zim file
+# already present under ${DATA_DIR:-./data}/zims/. DATA_DIR defaults to
+# ./data next to this file, but can be set to an absolute path (e.g. an
+# external drive mount) in this app's .env.
+
+services:
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:latest
+    # The image's own entrypoint (start.sh) already builds
+    # `--port=$PORT` itself (defaulting to 8080) - don't pass --port
+    # here too, or kiwix-serve rejects the duplicate flag and exits
+    # immediately. Just pass the ZIM glob; kiwix-serve resolves it
+    # itself (no shell involved, so quoting doesn't matter here).
+    command: ["*.zim"]
+    working_dir: /data
+    volumes:
+      - ${DATA_DIR:-./data}/zims:/data
+    ports:
+      - "${WIKIMED_PORT:-3020}:8080"
+    restart: unless-stopped

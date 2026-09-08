@@ -175,6 +175,103 @@ prompt_choice_if_unset() {
   echo "  ${var_name}=${choice}"
 }
 
+# Reads VAR from env_file; if unset/empty, prompts interactively for
+# zero or more choices (toggled on/off) from a space-separated list of
+# options (default options pre-checked), storing the selection back as a
+# space-separated string. Uses a whiptail/dialog checklist when
+# available (falling back to it if the user cancels), otherwise a plain
+# numbered prompt accepting a comma/space-separated list of numbers. If
+# no tool is available and the user enters nothing, the default
+# selection is kept. No-op if VAR is already set - safe to re-run. If
+# VAR is already exported in the process environment, that value takes
+# precedence and skips the prompt too (see prompt_if_unset).
+# Usage: prompt_multi_choice_if_unset VAR_NAME "Prompt text" "opt1 opt2 opt3" "default_opt1 default_opt2" "path/to/.env"
+prompt_multi_choice_if_unset() {
+  local var_name="$1" prompt_text="$2" opts_str="$3" defaults_str="$4" env_file="$5"
+  local current
+
+  if [ -n "${!var_name:-}" ]; then
+    set_env_var "$var_name" "${!var_name}" "$env_file"
+    echo "  ${var_name}=${!var_name} (from environment, skipping prompt)"
+    return 0
+  fi
+
+  current=$(grep -E "^${var_name}=" "$env_file" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
+
+  if [ -n "$current" ]; then
+    export "${var_name}=${current}"
+    echo "  ${var_name} already set (skipping prompt)"
+    return 0
+  fi
+
+  local -a opts defaults
+  read -r -a opts <<< "$opts_str"
+  read -r -a defaults <<< "$defaults_str"
+  local is_default
+  is_default() {
+    local needle="$1" d
+    for d in "${defaults[@]}"; do [ "$d" = "$needle" ] && return 0; done
+    return 1
+  }
+
+  local choice=""
+  local tool=""
+  if command -v whiptail >/dev/null 2>&1; then
+    tool=whiptail
+  elif command -v dialog >/dev/null 2>&1; then
+    tool=dialog
+  fi
+
+  if [ -n "$tool" ]; then
+    local args=(--checklist "$prompt_text" 20 78 "${#opts[@]}")
+    local opt status
+    for opt in "${opts[@]}"; do
+      status="OFF"
+      is_default "$opt" && status="ON"
+      args+=("$opt" "$opt" "$status")
+    done
+    local raw
+    if raw=$("$tool" "${args[@]}" 3>&1 1>&2 2>&3); then
+      # whiptail/dialog checklist output is space-separated,
+      # double-quoted tokens, e.g. "\"opt1\" \"opt2\"" - strip the quotes.
+      choice=$(echo "$raw" | tr -d '"')
+    else
+      echo "Cancelled - using default: ${defaults_str}"
+      choice="$defaults_str"
+    fi
+  else
+    echo "$prompt_text"
+    local i=1 opt
+    local -A idx_to_opt
+    for opt in "${opts[@]}"; do
+      local marker=""
+      is_default "$opt" && marker=" (default)"
+      printf "  %d) %s%s\n" "$i" "$opt" "$marker"
+      idx_to_opt[$i]="$opt"
+      i=$((i + 1))
+    done
+    local answer
+    read -r -p "Enter number(s), comma/space-separated [${defaults_str}]: " answer
+    if [ -z "$answer" ]; then
+      choice="$defaults_str"
+    else
+      local -a picked=()
+      local num
+      for num in ${answer//,/ }; do
+        [ -n "${idx_to_opt[$num]:-}" ] && picked+=("${idx_to_opt[$num]}")
+      done
+      if [ "${#picked[@]}" -eq 0 ]; then
+        choice="$defaults_str"
+      else
+        choice="${picked[*]}"
+      fi
+    fi
+  fi
+
+  set_env_var "$var_name" "$choice" "$env_file"
+  echo "  ${var_name}=${choice}"
+}
+
 # Asks a yes/no question. Returns 0 for yes, 1 for no. Default is "no"
 # unless second arg is "y".
 confirm() {
