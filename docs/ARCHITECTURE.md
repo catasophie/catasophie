@@ -56,9 +56,9 @@ port(s).
   per-project network) purely for its own internal container-to-container
   calls (e.g. `webui` talking to `ollama`) - there's no cross-app shared
   network, since nothing needs one without a central proxy.
-- **No dynamic lazy-start**: apps are started explicitly via
-  `make up ARGS="<app-id>"` - simpler, at the cost of not auto-starting on
-  first request.
+- **No dynamic lazy-start**: apps are started explicitly, individually,
+  via their own `./apps/<app-id>/up.sh` - simpler, at the cost of not
+  auto-starting on first request.
 
 ## Directory layout
 

@@ -10,9 +10,9 @@ make add-app ARGS="my-tool 8000"
 ```
 
 This copies `apps/_template/` to `apps/my-tool/` and substitutes the id
-and default port into the compose file, install/uninstall scripts,
-`.env.example`, and README (including deriving a valid `MY_TOOL_PORT`
-env var name from the id).
+and default port into the compose file, install/uninstall/up/down
+scripts, `.env.example`, and README (including deriving a valid
+`MY_TOOL_PORT` env var name from the id).
 
 ## Contract
 
@@ -53,7 +53,7 @@ env var name from the id).
   imports, etc.) - keep heavy setup steps as explicit scripts, not
   something that runs automatically.
 - **.env.example**: if your app needs configuration, provide an
-  `.env.example` in the app folder; `make up` copies it to `.env` on
+  `.env.example` in the app folder; `up.sh` copies it to `.env` on
   first start if missing.
 - **install.sh**: every app must ship an `install.sh` (this is what
   `make install`'s wizard calls). Contract:
@@ -120,6 +120,26 @@ env var name from the id).
 
   `apps/_template/uninstall.sh` has a working skeleton to copy from -
   `make add-app` scaffolds it automatically too.
+- **up.sh**: every app must also ship an `up.sh`, directly runnable
+  per-app (there's no general-purpose `make up`/root wrapper - start
+  apps individually). Contract:
+  - `source` `apps/cli/scripts/lib/common.sh`
+  - `ensure_env_file "$APP_DIR"` (copies `.env.example` -> `.env` on
+    first run if missing)
+  - `podman-compose -f docker-compose.yml up -d`
+  - argumentless - no flags to parse
+  - must be safe to re-run (idempotent)
+
+  `apps/_template/up.sh` has a working skeleton to copy from - `make
+  add-app` scaffolds it automatically too.
+- **down.sh**: every app must also ship a `down.sh`, directly runnable
+  per-app. Contract:
+  - `podman-compose -f docker-compose.yml down`
+  - argumentless - no flags to parse
+  - must be safe to re-run (no-op if already stopped)
+
+  `apps/_template/down.sh` has a working skeleton to copy from - `make
+  add-app` scaffolds it automatically too.
 
 ## Registering it
 
@@ -128,16 +148,11 @@ own README. There's no shared landing page or proxy config to update.
 
 ## Starting/stopping
 
-```sh
-podman-compose -f apps/my-tool/docker-compose.yml up -d
-podman-compose -f apps/my-tool/docker-compose.yml down
-```
-
-Or via the helper that also handles `.env` bootstrapping:
+Each app is started/stopped individually, directly via its own scripts:
 
 ```sh
-make up ARGS="my-tool"
-make down ARGS="my-tool"
+./apps/my-tool/up.sh
+./apps/my-tool/down.sh
 ```
 
 Or run its interactive installer directly (also invoked by the root

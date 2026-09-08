@@ -23,14 +23,14 @@ cp -r apps/_template "$dest"
 # Portable in-place sed for both GNU and BSD sed
 sed_i() { sed -i.bak "$@" && rm -f "${@: -1}.bak"; }
 
-for f in "$dest"/docker-compose.yml "$dest"/README.md "$dest"/install.sh "$dest"/uninstall.sh "$dest"/.env.example; do
+for f in "$dest"/docker-compose.yml "$dest"/README.md "$dest"/install.sh "$dest"/uninstall.sh "$dest"/up.sh "$dest"/down.sh "$dest"/.env.example; do
   sed -i.bak \
     -e "s#__APP_ID__#${id}#g" \
     -e "s#__PORT_VAR__#${port_var}#g" \
     -e "s#__PORT__#${port}#g" \
     "$f" && rm -f "$f.bak"
 done
-chmod +x "$dest"/install.sh "$dest"/uninstall.sh
+chmod +x "$dest"/install.sh "$dest"/uninstall.sh "$dest"/up.sh "$dest"/down.sh
 
 echo "Created $dest. Next steps:"
 echo "  1. Edit $dest/docker-compose.yml with your actual service(s)"

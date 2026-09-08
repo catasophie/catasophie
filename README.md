@@ -65,9 +65,10 @@ app's own README for its full list of ports:
 
 - [`apps/offline-maps/README.md`](apps/offline-maps/README.md)
 
-Stop everything with `make down ARGS="<app-ids...>"` (or
-`./apps/cli/scripts/down.sh <app-ids...>`). Update installed apps (and
-pull latest repo changes) with `make update` (or
+Stop an app with `./apps/<app-id>/down.sh` (start it again with
+`./apps/<app-id>/up.sh`) - each app is started/stopped individually,
+there's no general-purpose "stop everything" command. Update installed
+apps (and pull latest repo changes) with `make update` (or
 `./apps/cli/scripts/update.sh`) - it automatically backs up each app
 before updating and rolls back automatically if the update leaves it
 unhealthy. See `docs/BACKUP_RESTORE.md` for manual backup/restore usage.
@@ -131,14 +132,15 @@ podman machine ssh podman-machine-default 'sudo growpart /dev/vda 4 && sudo xfs_
 catasophie/
 ├── apps/
 │   ├── offline-maps/       # offline maps + basic navigation
+│   │   ├── install.sh / uninstall.sh  # per-app install/uninstall
+│   │   └── up.sh / down.sh            # per-app start/stop (run directly)
 │   ├── _template/          # copy this (via `make add-app`) to scaffold a new app
-│   └── cli/                # shell scripts driving install/uninstall/up/down/update/backup/restore
+│   └── cli/                # shell scripts driving install/uninstall/update/backup/restore
 │       └── scripts/
 │           ├── install.sh           # root wizard: pick + install app(s)
 │           ├── uninstall.sh          # remove installed app(s), or everything
 │           ├── update.sh             # git pull + update apps, with auto backup/rollback
 │           ├── backup.sh / restore.sh # manual backup + restore (data/volumes/.env)
-│           ├── up.sh / down.sh        # start/stop named apps
 │           ├── add-app.sh             # scaffold a new app from _template
 │           └── lib/common.sh          # shared install/backup/restore helpers
 └── docs/
