@@ -1,0 +1,12 @@
+{
+  "name": "Wikimed",
+  "description": "Offline medical/survival reference content (Kiwix), defaulting to a compact survival medicine guide.",
+  "category": "Medical",
+  "icon": "medkit",
+  "protocol": "http",
+  "path": "/",
+  "port": {
+    "envVar": "WIKIMED_PORT",
+    "default": 3020
+  }
+}

@@ -1,0 +1,87 @@
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <span class="mark"></span>
+      <h1>{{systemName}}</h1>
+      {{#if location}}<span id="location">{{location}}</span>{{/if}}
+    </div>
+    <div class="top-right">
+      <span id="clock"></span>
+      <span id="summary">
+        <span class="dot {{#if online}}{{#if total}}dot-partial{{/if}}{{/if}}" id="summary-dot"></span>
+        <span id="summary-text">{{online}} / {{total}} systems online</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<section id="host-panel" class="host-panel">
+  <div class="host-item host-ip">
+    <span class="host-label">IP</span>
+    <span class="host-value" id="host-ip">{{host.ip}}</span>
+  </div>
+  <div class="host-item host-connection">
+    <span class="host-label">Connection</span>
+    <span class="host-value">
+      <span class="status status-conn-{{host.connection.state}}" id="host-connection">
+        <span class="status-dot"></span>
+        <span class="status-label" id="host-connection-label">{{host.connection.label}}</span>
+      </span>
+    </span>
+  </div>
+  <div class="host-item host-cpu">
+    <span class="host-label">CPU</span>
+    <div class="host-bar">
+      <div class="host-bar-fill" id="host-cpu-bar" style="width: {{#if host.cpu.usagePercent}}{{host.cpu.usagePercent}}{{else}}0{{/if}}%"></div>
+    </div>
+    <span class="host-value" id="host-cpu-text">{{#if host.cpu.usagePercent}}{{host.cpu.usagePercent}}% of {{host.cpu.cores}} cores{{else}}measuring…{{/if}}</span>
+  </div>
+  <div class="host-item host-memory">
+    <span class="host-label">RAM</span>
+    <div class="host-bar">
+      <div class="host-bar-fill" id="host-memory-bar" style="width: {{host.memory.usedPercent}}%"></div>
+    </div>
+    <span class="host-value" id="host-memory-text">{{formatBytes host.memory.usedBytes}} / {{formatBytes host.memory.totalBytes}} ({{host.memory.usedPercent}}%)</span>
+  </div>
+  <div class="host-item host-storage">
+    <span class="host-label">Storage</span>
+    {{#if host.storage.error}}
+      <span class="host-value" id="host-storage-text">Unavailable</span>
+    {{else}}
+      <div class="host-bar">
+        <div class="host-bar-fill" id="host-storage-bar" style="width: {{host.storage.usedPercent}}%"></div>
+      </div>
+      <span class="host-value" id="host-storage-text">{{formatBytes host.storage.availableBytes}} free of {{formatBytes host.storage.totalBytes}} ({{host.storage.usedPercent}}% used)</span>
+    {{/if}}
+  </div>
+</section>
+
+<div class="controls">
+  <input id="search" type="text" placeholder="Search systems…" autocomplete="off" />
+  <div id="chips" class="chips">
+    <button class="chip active" data-cat="all">All systems</button>
+    {{#each categories}}
+      <button class="chip" data-cat="{{name}}">{{name}}</button>
+    {{/each}}
+  </div>
+  <button id="refresh-btn" class="refresh-btn">Rescan</button>
+</div>
+
+<main id="grid">
+  {{#each categories}}
+    <section class="category" data-category="{{name}}">
+      <h2>{{name}}</h2>
+      <div class="cards">
+        {{#each apps}}
+          {{> card}}
+        {{/each}}
+      </div>
+    </section>
+  {{else}}
+    <div class="empty">No apps configured - add a manifest.json to an app (see docs/ADDING_AN_APP.md).</div>
+  {{/each}}
+</main>
+
+<footer>
+  <span id="last-scan">Loaded {{online}} / {{total}} online.</span>
+</footer>

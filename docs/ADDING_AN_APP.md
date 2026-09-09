@@ -4,6 +4,13 @@ Every app lives in `apps/<app-id>/` and is a fully independent Podman
 Compose project, reachable directly on its own published port(s) - no
 shared proxy or network involved.
 
+> **Exception**: `apps/dashboard` does not follow this contract - it's a
+> plain host process (not a container) that starts/stops the other apps
+> listed above by calling their own `up.sh`/`down.sh`. See
+> `apps/dashboard/README.md` and the "dashboard" section of
+> `docs/ARCHITECTURE.md` for why. Everything below describes the
+> contract for every other app.
+
 ```sh
 make add-app
 # or: ./apps/cli/scripts/add-app.sh
@@ -53,6 +60,43 @@ name from the id, e.g. `MY_TOOL_PORT` for `my-tool`).
   published port(s), and any one-time setup (model downloads, data
   imports, etc.) - keep heavy setup steps as explicit scripts, not
   something that runs automatically.
+- **manifest.json**: every app must ship a `manifest.json` describing
+  itself for `apps/dashboard` - the dashboard discovers apps by scanning
+  `apps/<id>/manifest.json` at startup (and on demand via its "Rescan"
+  button), not from a hand-maintained list, so an app with no
+  `manifest.json` simply never shows up there (this is how
+  `apps/_template`, `apps/cli`, and `apps/dashboard` itself stay off the
+  dashboard without any special-casing). Schema:
+  ```json
+  {
+    "name": "Offline Maps",
+    "description": "One short sentence, shown on the dashboard card.",
+    "category": "Navigation",
+    "icon": "map",
+    "protocol": "http",
+    "path": "/",
+    "port": { "envVar": "MAPS_WEB_PORT", "default": 3010 }
+  }
+  ```
+  `name`, `description`, `category`, `icon`, and `port` (with both
+  `port.envVar` and `port.default`) are required; `protocol`/`path`
+  default to `"http"`/`"/"` if omitted. There's no per-app `host` field -
+  every app runs on the same device as the dashboard, so the host part of
+  each app's URL comes from a single dashboard-wide setting instead (see
+  `apps/dashboard/README.md`'s `DASHBOARD_ADVERTISE_HOST`), not something
+  each manifest repeats. `icon` must be one of the keys in
+  `apps/dashboard/public/app.js`'s `ICONS` map (falls back to `"server"`
+  if unknown). The dashboard reads the actual port live from the app's
+  own `.env` at scan time (via `port.envVar`), falling back to
+  `port.default` if `.env` or that var is missing (e.g. before the app is
+  installed) - the app's `.env` stays the single source of truth for its
+  port, the manifest never hardcodes a value that could drift from it. A
+  malformed manifest is skipped with a logged warning rather than
+  crashing the dashboard.
+  `apps/_template/manifest.json` has a placeholder to copy from - `make
+  add-app` scaffolds it automatically with the id/port substituted in,
+  same as the other template files (edit `description`/`category`/
+  `icon` by hand afterward).
 - **.env.example**: if your app needs configuration, provide an
   `.env.example` in the app folder; `up.sh` copies it to `.env` on
   first start if missing.
@@ -148,6 +192,8 @@ name from the id, e.g. `MY_TOOL_PORT` for `my-tool`).
 
 Nothing to register centrally - just document the port(s) in your app's
 own README. There's no shared landing page or proxy config to update.
+The only thing that makes an app appear on `apps/dashboard` is shipping
+a `manifest.json` (see above) - no separate registration step.
 
 ## Starting/stopping
 

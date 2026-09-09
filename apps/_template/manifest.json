@@ -1,0 +1,12 @@
+{
+  "name": "__APP_ID__",
+  "description": "Describe what this app does here - shown on the dashboard card.",
+  "category": "Other",
+  "icon": "server",
+  "protocol": "http",
+  "path": "/",
+  "port": {
+    "envVar": "__PORT_VAR__",
+    "default": __PORT__
+  }
+}

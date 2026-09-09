@@ -1,0 +1,12 @@
+{
+  "name": "Translate",
+  "description": "Offline machine translation (LibreTranslate / Argos Translate) between installed language pairs.",
+  "category": "Communications",
+  "icon": "book",
+  "protocol": "http",
+  "path": "/",
+  "port": {
+    "envVar": "TRANSLATE_PORT",
+    "default": 3030
+  }
+}

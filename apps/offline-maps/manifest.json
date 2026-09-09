@@ -1,0 +1,12 @@
+{
+  "name": "Offline Maps",
+  "description": "Offline map viewing with basic driving navigation from locally stored OpenStreetMap data.",
+  "category": "Navigation",
+  "icon": "map",
+  "protocol": "http",
+  "path": "/",
+  "port": {
+    "envVar": "MAPS_WEB_PORT",
+    "default": 3010
+  }
+}

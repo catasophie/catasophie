@@ -1,0 +1,21 @@
+{
+  "name": "catasophie-dashboard",
+  "version": "1.0.0",
+  "description": "Resilience Hub - status + start/stop dashboard for catasophie's other apps.",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@fastify/formbody": "^7.4.0",
+    "@fastify/static": "^7.0.4",
+    "@fastify/view": "^9.1.0",
+    "fastify": "^4.28.1",
+    "handlebars": "^4.7.8"
+  }
+}

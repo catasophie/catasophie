@@ -61,7 +61,41 @@ port(s).
   via their own `./apps/<app-id>/up.sh` - simpler, at the cost of not
   auto-starting on first request.
 
+## The dashboard: a deliberate, narrow exception
+
+`apps/dashboard` is the one app that breaks the "independent container,
+no shared infra, no orchestrator" rule above - on purpose, and narrowly:
+
+- It's a plain Node/Fastify process that runs **directly on the host**,
+  not inside a container - it has no `docker-compose.yml` and isn't
+  started via `podman-compose`. `install.sh`/`up.sh`/`down.sh` instead
+  manage it as a regular background process (PID file, `nohup`).
+- It discovers which apps to show by scanning each app directory for a
+  `manifest.json` (see `docs/ADDING_AN_APP.md`) rather than a
+  hand-maintained registry - an app that ships one appears automatically,
+  no separate registration step, and one that doesn't (like
+  `apps/_template`, `apps/cli`, or the dashboard itself) simply doesn't
+  show up. This scan happens once at startup and again whenever the
+  dashboard's "Rescan" button is used - not on every request.
+- It reads each other app's status by inspecting `podman ps` for that
+  app's compose-project label, and starts/stops apps by invoking that
+  app's own `up.sh`/`down.sh` - never `podman-compose` directly on
+  another app's behalf. Every other app's own idempotent install
+  contract (`docs/ADDING_AN_APP.md`) is completely unaffected; the
+  dashboard is just a UI in front of the same scripts you'd run by hand.
+- This was chosen over containerizing the dashboard and bind-mounting
+  the podman socket + this repo into it, which would work but grants a
+  container root-equivalent control over the whole host's podman and
+  couples it to socket-path/rootless-vs-rootful details that vary by
+  platform - a plain host process avoids all of that at the cost of
+  being the only app in `apps/` that isn't itself a container.
+- Like the rest of the repo, it has no authentication - anyone who can
+  reach its port can start/stop any app it lists.
+
+See `apps/dashboard/README.md` for the full rationale and how it works.
+
 ## Directory layout
 
 See the top-level `README.md` for the full directory tree and
-`docs/ADDING_AN_APP.md` for the per-app contract.
+`docs/ADDING_AN_APP.md` for the per-app contract (which applies to every
+app under `apps/` except `apps/dashboard`, see above).

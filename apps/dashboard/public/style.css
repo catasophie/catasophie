@@ -117,6 +117,69 @@ header.top {
 .dot-offline { background: var(--red); box-shadow: 0 0 6px var(--red); }
 .dot-partial { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
 
+/* ---------- Host panel ---------- */
+
+.host-panel {
+  max-width: 1240px;
+  margin: 20px auto 0;
+  padding: 16px 28px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.host-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.host-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.host-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.host-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.host-bar-fill {
+  height: 100%;
+  background: var(--amber);
+  transition: width 0.3s ease;
+}
+
+.status-conn-connected .status-dot { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.status-conn-connected { color: var(--green); }
+
+.status-conn-link-up .status-dot {
+  background: var(--amber);
+  animation: pulse 1s ease-in-out infinite;
+}
+.status-conn-link-up { color: var(--amber); }
+
+.status-conn-isolated .status-dot { background: var(--red); }
+.status-conn-isolated { color: var(--red); }
+
+@media (prefers-reduced-motion: reduce) {
+  .host-bar-fill { transition: none; }
+}
+
 /* ---------- Controls ---------- */
 
 .controls {
@@ -224,8 +287,9 @@ main {
   border-left-color: var(--amber);
 }
 
-.card-offline { opacity: 0.6; }
-.card-offline:hover { opacity: 0.85; }
+.card-offline { opacity: 0.75; }
+.card-offline:hover { opacity: 0.95; }
+.card-not-installed { opacity: 0.5; }
 
 .card-top {
   display: flex;
@@ -256,17 +320,20 @@ main {
   background: var(--text-dim);
 }
 
-.status-online .status-dot { background: var(--green); box-shadow: 0 0 5px var(--green); }
-.status-online { color: var(--green); }
+.status-running .status-dot { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.status-running { color: var(--green); }
 
-.status-offline .status-dot { background: var(--red); }
-.status-offline { color: var(--red); }
+.status-stopped .status-dot { background: var(--red); }
+.status-stopped { color: var(--red); }
 
-.status-checking .status-dot {
+.status-not-installed .status-dot { background: var(--text-dim); }
+.status-not-installed { color: var(--text-dim); }
+
+.status-pending .status-dot {
   background: var(--amber);
   animation: pulse 1s ease-in-out infinite;
 }
-.status-checking { color: var(--amber); }
+.status-pending { color: var(--amber); }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -296,6 +363,37 @@ main {
   padding-top: 8px;
 }
 
+.card-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.card-actions .hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.card-actions .hint code {
+  color: var(--text);
+}
+
+.action-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+.action-btn:hover:not(:disabled) { border-color: var(--amber-dim); }
+.action-btn:disabled { opacity: 0.35; cursor: default; }
+
+.start-btn:not(:disabled) { border-color: var(--green); color: var(--green); }
+.stop-btn:not(:disabled) { border-color: var(--red); color: var(--red); }
+
 .empty {
   color: var(--text-dim);
   font-size: 14px;
@@ -314,7 +412,7 @@ footer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .status-checking .status-dot { animation: none; }
+  .status-pending .status-dot { animation: none; }
   .card { transition: none; }
 }
 

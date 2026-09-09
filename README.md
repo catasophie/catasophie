@@ -22,6 +22,10 @@ Currently implemented:
 - **`apps/sdr`** - web-based SDR receiver (OpenWebRX+) for an RTL-SDR USB
   dongle - waterfall/spectrum display and AM/FM/SSB/digital-mode
   demodulation from any browser on the LAN.
+- **`apps/dashboard`** - status page for every app above, with buttons
+  to start/stop each one - the one deliberate exception to the
+  "no central dashboard" design (see `docs/ARCHITECTURE.md`), since it
+  runs as a plain host process rather than a container.
 
 See `docs/ROADMAP.md` for other apps worth adding next (an offline LLM
 assistant, mesh comms, automated NOAA/SAME emergency-alert monitor,
@@ -81,6 +85,7 @@ app's own README for its full list of ports:
 - [`apps/wikimed/README.md`](apps/wikimed/README.md)
 - [`apps/translate/README.md`](apps/translate/README.md)
 - [`apps/sdr/README.md`](apps/sdr/README.md)
+- [`apps/dashboard/README.md`](apps/dashboard/README.md)
 
 Stop an app with `./apps/<app-id>/down.sh` (start it again with
 `./apps/<app-id>/up.sh`) - each app is started/stopped individually,
@@ -154,6 +159,7 @@ catasophie/
 │   ├── wikimed/            # offline medical/survival reference content (Kiwix)
 │   ├── translate/          # offline machine translation (LibreTranslate)
 │   ├── sdr/                # web SDR receiver (OpenWebRX+) for an RTL-SDR dongle
+│   ├── dashboard/          # status + start/stop page for the apps above (host process, not a container - see docs/ARCHITECTURE.md)
 │   ├── _template/          # copy this (via `make add-app`) to scaffold a new app
 │   └── cli/                # shell scripts driving install/uninstall/update/backup/restore
 │       └── scripts/

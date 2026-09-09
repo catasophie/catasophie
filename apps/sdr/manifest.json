@@ -1,0 +1,12 @@
+{
+  "name": "SDR Receiver",
+  "description": "Web-based SDR receiver (OpenWebRX+) for an RTL-SDR USB dongle - waterfall/spectrum + demodulation.",
+  "category": "Communications",
+  "icon": "radio",
+  "protocol": "http",
+  "path": "/",
+  "port": {
+    "envVar": "SDR_PORT",
+    "default": 3040
+  }
+}

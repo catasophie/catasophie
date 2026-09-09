@@ -43,7 +43,7 @@ cp -r apps/_template "$dest"
 # Portable in-place sed for both GNU and BSD sed
 sed_i() { sed -i.bak "$@" && rm -f "${@: -1}.bak"; }
 
-for f in "$dest"/docker-compose.yml "$dest"/README.md "$dest"/install.sh "$dest"/uninstall.sh "$dest"/up.sh "$dest"/down.sh "$dest"/.env.example; do
+for f in "$dest"/docker-compose.yml "$dest"/README.md "$dest"/install.sh "$dest"/uninstall.sh "$dest"/up.sh "$dest"/down.sh "$dest"/.env.example "$dest"/manifest.json; do
   sed -i.bak \
     -e "s#__APP_ID__#${id}#g" \
     -e "s#__PORT_VAR__#${port_var}#g" \
@@ -56,4 +56,5 @@ echo "Created $dest. Next steps:"
 echo "  1. Edit $dest/docker-compose.yml with your actual service(s)"
 echo "  2. Edit $dest/install.sh (add any required config prompts)"
 echo "  3. Edit $dest/README.md"
-echo "  4. make install (or: $dest/install.sh)"
+echo "  4. Edit $dest/manifest.json (description/category/icon - see docs/ADDING_AN_APP.md) so it shows up on the dashboard"
+echo "  5. make install (or: $dest/install.sh)"
