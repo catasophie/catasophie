@@ -140,10 +140,32 @@ else
   rm -rf "$build_dir"
 fi
 
+# "data" must be keyed "v3" and "styles" must explicitly list the
+# bundled "basic-preview" style - this mirrors tileserver-gl's own
+# auto-config logic for openmaptiles-schema mbtiles (see
+# startWithInputFile in its main.js): the bundled style.json's vector
+# source URL is hardcoded to "mbtiles://{v3}", so the data source id has
+# to be literally "v3" for it to resolve. Without an explicit "styles"
+# section here, tileserver-gl never registers any style id at all,
+# so /styles/basic-preview/style.json 404s even though the style file
+# ships in the image - this bit web/index.html once already, don't
+# remove it again. "paths.root" points at the image's own bundled
+# fonts/styles dir (not /data - our mbtiles volume - which is instead
+# given directly via "paths.mbtiles").
 cat >"${data_dir}/tiles/config.json" <<EOF
 {
-  "options": { "paths": { "root": "/data" } },
-  "data": { "${region_name}": { "mbtiles": "${region_name}.mbtiles" } }
+  "options": {
+    "paths": {
+      "root": "/usr/src/app/node_modules/tileserver-gl-styles",
+      "fonts": "fonts",
+      "styles": "styles",
+      "mbtiles": "/data"
+    }
+  },
+  "styles": {
+    "basic-preview": { "style": "basic-preview/style.json" }
+  },
+  "data": { "v3": { "mbtiles": "${region_name}.mbtiles" } }
 }
 EOF
 

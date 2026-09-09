@@ -26,3 +26,6 @@ restore: ## Restore an app from a backup: make restore ARGS="offline-maps"
 
 add-app: ## Scaffold a new app (prompts for app id + port): make add-app
 	./$(SCRIPTS)/add-app.sh
+
+start:
+	./apps/dashboard/up.sh
