@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Resilience Hub</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <span class="mark"></span>
+      <h1 id="system-name">Resilience Hub</h1>
+      <span id="location" hidden></span>
+    </div>
+    <div class="top-right">
+      <span id="clock"></span>
+      <span id="summary"></span>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <input id="search" type="text" placeholder="Search systems…" autocomplete="off" />
+  <div id="chips" class="chips"></div>
+  <button id="refresh-btn" class="refresh-btn">Rescan</button>
+</div>
+
+<main id="grid"></main>
+
+<footer>
+  <span id="last-scan">Scanning…</span>
+</footer>
+
+<script src="apps-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
