@@ -1,0 +1,40 @@
+# Offline machine translation via LibreTranslate (engine: Argos
+# Translate). Single container serves both the web UI and the
+# translate/detect/languages API on one port - see README.md.
+#
+# Notes (see install.sh / scripts/select-languages.sh for the reasoning
+# behind each of these):
+#   - LT_LOAD_ONLY restricts (and, on first boot / language changes,
+#     triggers downloading of) which languages are loaded - comma
+#     separated ISO codes, e.g. "en,es,fr". Stored directly in that
+#     format in TRANSLATE_LANGS (see .env.example).
+#   - The container runs as a fixed non-root uid (1032) baked into the
+#     image - the bind-mounted data dir must be owned by that uid or
+#     the container fails with a PermissionError on start. install.sh
+#     and scripts/select-languages.sh both run
+#     `podman unshare chown -R 1032:1032 <data dir>` to handle this
+#     (verified: plain bind mounts fail without it; podman-compose's
+#     short volume syntax doesn't support podman's own `:U` mount flag
+#     to do this automatically).
+#   - LT_UPDATE_MODELS is intentionally NOT set here - it's only ever
+#     exported for one single `up -d` invocation by
+#     scripts/select-languages.sh when the language selection changes,
+#     never persisted to .env, so normal starts never need internet.
+
+services:
+  translate:
+    image: docker.io/libretranslate/libretranslate:latest
+    environment:
+      - LT_LOAD_ONLY=${TRANSLATE_LANGS:-en,es}
+      - LT_UPDATE_MODELS=${LT_UPDATE_MODELS:-}
+    volumes:
+      - ${DATA_DIR:-./data}:/home/libretranslate/.local
+    ports:
+      - "${TRANSLATE_PORT:-3030}:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "./venv/bin/python scripts/healthcheck.py"]
+      interval: 10s
+      timeout: 4s
+      retries: 4
+      start_period: 5s

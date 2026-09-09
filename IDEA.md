@@ -1,0 +1,1 @@
+Create a project which I can install on a local device like laptop, raspberry pi or desktop which will work completely offline. It should hold information and tools for disaster scenarios where the grid is down or when I don't have any network connection

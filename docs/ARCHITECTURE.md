@@ -13,16 +13,16 @@ port(s).
  ┌───────────────────────────────────────────────────────────────────┐
  │                            Podman                                  │
  │                                                                     │
- │   ┌─────────────────────┐   ┌────────────────────┐   ┌─────────┐   │
- │   │ apps/offline-maps   │   │ apps/wikimed       │   │ apps/…  │   │
- │   │ tiles + web         │   │ kiwix-serve        │   │         │   │
- │   │ (routing/geocoder   │   │ (survival medicine │   │         │   │
- │   │  disabled for now)  │   │  ZIMs by default)  │   │         │   │
- │   └──────────┬──────────┘   └─────────┬──────────┘   └─────────┘   │
- └──────────────┼─────────────────────────┼─────────────────────────┘
-                │ :3010 (web)             │ :3020 (kiwix)
-                │ :3012 (tiles)           │
-                ▼                         ▼
+ │   ┌─────────────────────┐   ┌────────────────────┐   ┌─────────────────┐   │
+ │   │ apps/offline-maps   │   │ apps/wikimed       │   │ apps/translate  │   │
+ │   │ tiles + web         │   │ kiwix-serve        │   │ libretranslate  │   │
+ │   │ (routing/geocoder   │   │ (survival medicine │   │ (offline ML    │   │
+ │   │  disabled for now)  │   │  ZIMs by default)  │   │  translation)  │   │
+ │   └──────────┬──────────┘   └─────────┬──────────┘   └────────┬────────┘   │
+ └──────────────┼─────────────────────────┼───────────────────────┼──────────┘
+                │ :3010 (web)             │ :3020 (kiwix)         │ :3030
+                │ :3012 (tiles)           │                       │
+                ▼                         ▼                       ▼
           http://<device-ip>:<port>/  (LAN or localhost)
 ```
 

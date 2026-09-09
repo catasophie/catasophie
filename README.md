@@ -16,6 +16,9 @@ Currently implemented:
   an extensible catalog of additional ZIMs (emergency medicine, water
   safety, food preparation, knots, the full WikiMed medical
   encyclopedia, ...).
+- **`apps/translate`** - offline machine translation (LibreTranslate /
+  Argos Translate), with a picker to select which languages to install
+  and add more later.
 
 See `docs/ROADMAP.md` for other apps worth adding next (an offline LLM
 assistant, mesh comms, SDR radio monitor, inventory tracker, ...).
@@ -72,6 +75,7 @@ app's own README for its full list of ports:
 
 - [`apps/offline-maps/README.md`](apps/offline-maps/README.md)
 - [`apps/wikimed/README.md`](apps/wikimed/README.md)
+- [`apps/translate/README.md`](apps/translate/README.md)
 
 Stop an app with `./apps/<app-id>/down.sh` (start it again with
 `./apps/<app-id>/up.sh`) - each app is started/stopped individually,
@@ -143,6 +147,7 @@ catasophie/
 │   │   ├── install.sh / uninstall.sh  # per-app install/uninstall
 │   │   └── up.sh / down.sh            # per-app start/stop (run directly)
 │   ├── wikimed/            # offline medical/survival reference content (Kiwix)
+│   ├── translate/          # offline machine translation (LibreTranslate)
 │   ├── _template/          # copy this (via `make add-app`) to scaffold a new app
 │   └── cli/                # shell scripts driving install/uninstall/update/backup/restore
 │       └── scripts/
