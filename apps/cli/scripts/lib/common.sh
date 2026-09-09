@@ -29,11 +29,11 @@ check_deps() {
   command -v podman-compose >/dev/null 2>&1 || missing+=("podman-compose")
   if [ "${#missing[@]}" -gt 0 ]; then
     echo "error: missing required tool(s): ${missing[*]}" >&2
+    echo "  Run 'make bootstrap' (or ./apps/cli/scripts/bootstrap.sh) to install them." >&2
     if [ "$(uname -s)" = "Darwin" ]; then
-      echo "  On macOS: brew install podman podman-compose" >&2
-      echo "  Then one-time setup: podman machine init && podman machine start" >&2
+      echo "  Manually: brew install podman podman-compose && podman machine init && podman machine start" >&2
     else
-      echo "See https://podman.io/docs/installation and https://github.com/containers/podman-compose" >&2
+      echo "  Manually: see https://podman.io/docs/installation and https://github.com/containers/podman-compose" >&2
     fi
     exit 1
   fi

@@ -35,6 +35,26 @@ inventory tracker, ...).
 
 Requires [Podman](https://podman.io/docs/installation), Bash 4+, `make`,
 and [podman-compose](https://github.com/containers/podman-compose).
+Set these up in one step with the bootstrap script - clone the repo and
+run it before anything else:
+
+```sh
+git clone <this repo's URL> catasophie
+cd catasophie
+make bootstrap
+```
+
+`make bootstrap` (or `./apps/cli/scripts/bootstrap.sh`) detects your
+host OS and installs everything above via your package manager: `apt`
+on Debian/Ubuntu/Raspberry Pi OS, `dnf`/`yum` on Fedora/RHEL/CentOS,
+`pacman` on Arch, and Homebrew on macOS. On Linux it also installs the
+rootless-podman prerequisites (`uidmap`/`slirp4netns`, and a
+subuid/subgid range for your user if one isn't already allocated). On
+macOS it additionally initializes and starts the `podman machine` VM if
+that hasn't been done yet. It's idempotent - safe to re-run any time,
+e.g. after adding a new dependency in a future update.
+
+If your distro/OS isn't recognized, or you'd rather do it by hand:
 
 **Linux** (incl. Raspberry Pi): install `podman`, `podman-compose`, and
 `make` via your distro's package manager. Bash 4+ is standard on any
@@ -163,6 +183,7 @@ catasophie/
 │   ├── _template/          # copy this (via `make add-app`) to scaffold a new app
 │   └── cli/                # shell scripts driving install/uninstall/update/backup/restore
 │       └── scripts/
+│           ├── bootstrap.sh          # one-time host setup: installs podman etc.
 │           ├── install.sh           # root wizard: pick + install app(s)
 │           ├── uninstall.sh          # remove installed app(s), or everything
 │           ├── update.sh             # git pull + update apps, with auto backup/rollback

@@ -1,10 +1,13 @@
 SHELL := /bin/bash
 SCRIPTS := apps/cli/scripts
 
-.PHONY: help install uninstall update backup restore add-app
+.PHONY: help bootstrap install uninstall update backup restore add-app
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | sort
+
+bootstrap: ## One-time host setup: installs podman, podman-compose, make, git, etc.
+	./$(SCRIPTS)/bootstrap.sh
 
 install: ## Install app(s), or pick interactively if none given: make install ARGS="offline-maps"
 	./$(SCRIPTS)/install.sh $(ARGS)
