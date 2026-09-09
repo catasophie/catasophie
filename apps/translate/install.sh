@@ -29,12 +29,14 @@ data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1
 
 # The LibreTranslate image runs as a fixed non-root uid (1032) - the
-# bind-mounted data dir must be owned by that uid or the container fails
-# to start (verified during development: plain bind mounts otherwise hit
-# a PermissionError). Safe/idempotent to re-run.
-podman unshare chown -R 1032:1032 "$data_dir"
+# bind-mounted data dir must be writable by that uid or the container
+# fails to start with a PermissionError. chown_data_dir handles the
+# rootless-podman namespace mapping on Linux and is a no-op under remote
+# podman (macOS `podman machine`), where it's both unsupported and
+# unnecessary. Safe/idempotent to re-run.
+chown_data_dir "$data_dir" 1032:1032
 
-"${APP_DIR}/scripts/select-languages.sh"
+"$BASH" "${APP_DIR}/scripts/select-languages.sh"
 
 mark_installed translate
 echo "== translate installed. Visit http://localhost:${TRANSLATE_PORT:-3030}/ =="

@@ -28,7 +28,7 @@ data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1
 mkdir -p "${data_dir}/tiles" "${data_dir}/raw"
 
-"${APP_DIR}/scripts/import-region.sh"
+"$BASH" "${APP_DIR}/scripts/import-region.sh"
 
 echo "Starting tiles, web..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d

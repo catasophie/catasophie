@@ -113,7 +113,7 @@ new_csv=$(echo "$new_selection" | tr ' ' '\n' | sed '/^$/d' | sort -u | tr '\n' 
 
 data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1
-podman unshare chown -R 1032:1032 "$data_dir"
+chown_data_dir "$data_dir" 1032:1032
 
 if [ "$new_csv" = "$current_csv" ] && step_done translate "languages:${new_csv}"; then
   echo "No change - translate already serving: ${new_csv}"

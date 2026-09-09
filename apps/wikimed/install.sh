@@ -29,7 +29,7 @@ data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1
 mkdir -p "${data_dir}/zims"
 
-"${APP_DIR}/scripts/download-zim.sh"
+"$BASH" "${APP_DIR}/scripts/download-zim.sh"
 
 echo "Starting wikimed..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d

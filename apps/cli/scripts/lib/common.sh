@@ -432,6 +432,46 @@ ensure_data_dir() {
   mkdir -p "$dir"
 }
 
+# True when podman talks to a remote/VM service rather than running
+# containers natively on this host (always the case on macOS, where
+# podman is a client for a `podman machine` VM).
+podman_is_remote() {
+  [ "$(podman info --format '{{.Host.ServiceIsRemote}}' 2>/dev/null)" = "true" ]
+}
+
+# Gives a bind-mounted data dir to the fixed non-root uid some images run
+# as, so the container can actually write to it.
+#
+# Native rootless podman (Linux): the host dir is owned by the invoking
+# user, which maps to root *inside* the container's user namespace, not
+# to the image's uid - so it must be chowned via `podman unshare`.
+#
+# Remote podman (macOS `podman machine`): `podman unshare` is not
+# supported by the remote client at all (it errors out - this used to
+# make install.sh fail on macOS), and it isn't needed: the file sharing
+# layer between host and VM already presents bind mounts as owned by the
+# container's uid. Verified writable from inside the container without
+# any chown, so this is a no-op there.
+chown_data_dir() {
+  local dir="$1" owner="$2"
+  if podman_is_remote; then
+    return 0
+  fi
+  podman unshare chown -R "$owner" "$dir"
+}
+
+# Counterpart to chown_data_dir: removes a data dir whose contents may be
+# owned by a container uid the current user can't otherwise unlink.
+remove_data_dir() {
+  local dir="$1"
+  [ -d "$dir" ] || return 0
+  if podman_is_remote; then
+    rm -rf "$dir"
+  else
+    podman unshare rm -rf "$dir"
+  fi
+}
+
 # podman-compose's project name (used in container labels) defaults to
 # the compose file's directory name - i.e. the app id itself.
 _project_name_for() {

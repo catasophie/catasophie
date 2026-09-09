@@ -9,13 +9,16 @@
 #     separated ISO codes, e.g. "en,es,fr". Stored directly in that
 #     format in TRANSLATE_LANGS (see .env.example).
 #   - The container runs as a fixed non-root uid (1032) baked into the
-#     image - the bind-mounted data dir must be owned by that uid or
-#     the container fails with a PermissionError on start. install.sh
-#     and scripts/select-languages.sh both run
-#     `podman unshare chown -R 1032:1032 <data dir>` to handle this
-#     (verified: plain bind mounts fail without it; podman-compose's
-#     short volume syntax doesn't support podman's own `:U` mount flag
-#     to do this automatically).
+#     image - under native rootless podman the bind-mounted data dir
+#     must be chowned to that uid or the container fails with a
+#     PermissionError on start. install.sh and
+#     scripts/select-languages.sh both call `chown_data_dir` (see
+#     apps/cli/scripts/lib/common.sh) to handle this; it's a no-op on
+#     remote podman (macOS `podman machine`), where the host/VM file
+#     sharing layer already presents the mount as owned by that uid and
+#     `podman unshare` isn't supported by the remote client at all.
+#     (podman-compose's short volume syntax doesn't support podman's own
+#     `:U` mount flag to do this automatically.)
 #   - LT_UPDATE_MODELS is intentionally NOT set here - it's only ever
 #     exported for one single `up -d` invocation by
 #     scripts/select-languages.sh when the language selection changes,

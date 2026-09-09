@@ -27,6 +27,14 @@ ensure_data_dir "$data_dir" || exit 1
 echo "Starting __APP_ID__..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d
 
+# When invoking a helper script under scripts/, call it as
+# `"$BASH" "${APP_DIR}/scripts/<name>.sh"` rather than executing it
+# directly. Executing it directly re-enters through its shebang, which on
+# macOS can resolve to the system bash 3.2 even though the installer
+# itself was started with a bash 4+ - the child then dies on
+# check_deps's version check. "$BASH" is the interpreter running this
+# script, so the child inherits the same (known-good) bash.
+
 # Example - for any heavy/fallible/multi-stage step that isn't simply
 # re-running the whole thing when repeated, track its completion with
 # mark_step_done/step_done so a re-run resumes instead of redoing or

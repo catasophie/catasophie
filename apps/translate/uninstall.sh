@@ -59,10 +59,10 @@ fi
 
 if [ "$KEEP_DATA" != "1" ] && [ -d "$data_dir" ]; then
   echo "Removing data dir: ${data_dir}"
-  # Downloaded models are owned by the container's fixed non-root uid
-  # (1032, chowned to it by install.sh/scripts/select-languages.sh) -
-  # use `podman unshare` so the current user can actually remove them.
-  podman unshare rm -rf "$data_dir"
+  # Downloaded models may be owned by the container's fixed non-root uid
+  # (1032) - remove_data_dir enters the podman user namespace where
+  # needed so the current user can actually unlink them.
+  remove_data_dir "$data_dir"
 fi
 
 if [ "$KEEP_BACKUPS" != "1" ]; then
