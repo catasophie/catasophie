@@ -18,9 +18,13 @@ order. None of these are scaffolded yet - use `make add-app` and
   LoRa with no infrastructure; biggest capability jump for multi-person
   coordination during an outage. Needs `requires_host_device`-style USB
   passthrough for the LoRa radio.
-- **RTL-SDR weather/emergency radio monitor** - decode NOAA weather radio
-  and SAME/EAS alerts for passive situational awareness. Also needs USB
-  device passthrough.
+- **Automated NOAA/SAME emergency-alert monitor** - `apps/sdr` already
+  implements general-purpose web SDR (OpenWebRX+) for manual/passive
+  listening with an RTL-SDR dongle; this item is about a separate,
+  headless service (`rtl_fm`/`multimon-ng`-style pipeline) that decodes
+  NOAA Weather Radio SAME headers automatically and logs/alerts on
+  severe-weather/EAS codes without anyone needing to watch a browser.
+  Also needs USB device passthrough (see `apps/sdr` for the pattern).
 
 ## Later
 

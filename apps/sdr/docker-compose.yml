@@ -1,0 +1,37 @@
+# OpenWebRX+ - web-based SDR receiver (waterfall/spectrum + AM/FM/SSB/
+# digital-mode demodulation), reachable from any browser on the LAN.
+# Needs an RTL-SDR USB dongle plugged into the host - see README.md for
+# required host-side prerequisites (udev rule + kernel module blacklist)
+# before this will actually be able to receive anything.
+#
+# Image: docker.io/slechev/openwebrxplus - actively maintained build of
+# the OpenWebRX+ community fork (github.com/luarvique/openwebrx),
+# multi-arch (works on Raspberry Pi). Verified against the image's
+# actual /run.sh entrypoint (not just its README) on 2026-09-09:
+#   - exposes 8073/tcp for the web UI
+#   - declares /etc/openwebrx and /var/lib/openwebrx as its persistent
+#     data paths
+#   - honors TZ, OPENWEBRX_ADMIN_USER, OPENWEBRX_ADMIN_PASSWORD env vars
+#     to auto-create an admin account on first boot (see install.sh)
+#   - sets its own internal scratch/temp dir to /tmp/openwebrx
+
+services:
+  sdr:
+    image: docker.io/slechev/openwebrxplus:latest
+    environment:
+      - TZ=${TZ:-UTC}
+      - OPENWEBRX_ADMIN_USER=${OPENWEBRX_ADMIN_USER:-}
+      - OPENWEBRX_ADMIN_PASSWORD=${OPENWEBRX_ADMIN_PASSWORD:-}
+    devices:
+      # Whole USB bus tree, not a specific bus/device path - RTL-SDR
+      # dongles renumber on replug/reboot, so pinning an exact path
+      # (e.g. /dev/bus/usb/002/002) would break the next time it moves.
+      - /dev/bus/usb:/dev/bus/usb
+    volumes:
+      - ${DATA_DIR:-./data}/var:/var/lib/openwebrx
+      - ${DATA_DIR:-./data}/etc:/etc/openwebrx
+    tmpfs:
+      - /tmp/openwebrx
+    ports:
+      - "${SDR_PORT:-3040}:8073"
+    restart: unless-stopped
