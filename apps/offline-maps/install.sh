@@ -21,7 +21,10 @@ prompt_if_unset DATA_DIR \
   "Directory for persistent data - tiles (blank = ./data here, or an absolute path e.g. an external drive mount)" \
   "" "$ENV_FILE"
 
-prompt_if_unset MAPS_WEB_PORT "Port to publish the map frontend on" "3010" "$ENV_FILE"
+prompt_if_unset MAPS_WEB_TLS_PORT \
+  "Port to publish the map frontend on over HTTPS (default/primary - needed for the 'you are here' location marker to work when accessed via LAN IP - see README.md)" \
+  "3010" "$ENV_FILE"
+prompt_if_unset MAPS_WEB_PORT "Port to publish the map frontend on over plain HTTP (fallback - location marker won't work over this one unless accessed as localhost)" "3011" "$ENV_FILE"
 prompt_if_unset MAPS_TILES_PORT "Port to publish the tile server on" "3012" "$ENV_FILE"
 
 data_dir="${DATA_DIR:-${APP_DIR}/data}"
@@ -29,9 +32,11 @@ ensure_data_dir "$data_dir" || exit 1
 mkdir -p "${data_dir}/tiles" "${data_dir}/raw"
 
 "$BASH" "${APP_DIR}/scripts/import-region.sh"
+"$BASH" "${APP_DIR}/scripts/ensure-tls-cert.sh"
 
 echo "Starting tiles, web..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d
 
 mark_installed offline-maps
-echo "== offline-maps installed. Visit http://localhost:${MAPS_WEB_PORT:-3010}/ =="
+echo "== offline-maps installed. Visit https://localhost:${MAPS_WEB_TLS_PORT:-3010}/ =="
+echo "   (or http://localhost:${MAPS_WEB_PORT:-3011}/ - but the location marker needs the https port above when accessed over LAN)"

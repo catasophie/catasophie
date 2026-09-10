@@ -1,7 +1,8 @@
-// Generated at container start (see docker-compose.yml's "web" service -
-// nginx's built-in envsubst-on-templates entrypoint renders this into
-// config.js) from the actual published ports, so index.html can call
-// the tiles backend directly without a reverse proxy in front.
+// Generated at container start (nginx's built-in
+// docker-entrypoint.d/20-envsubst-on-templates.sh renders this from
+// MAPS_WEB_TLS_PORT) so index.html's "switch to HTTPS" notice (see
+// its insecure-context check) links to the right port even if you've
+// customized it away from the 3010/3011 defaults in .env.
 window.MAPS_CONFIG = {
-  tilesPort: "${MAPS_TILES_PORT}"
+  tlsPort: "${MAPS_WEB_TLS_PORT}"
 };

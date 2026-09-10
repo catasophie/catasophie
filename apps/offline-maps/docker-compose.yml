@@ -2,18 +2,45 @@
 # keep the install slim; see git history for the osrm/geocoder setup).
 #
 # Services:
-#   - tiles:      tileserver-gl serving a pre-built .mbtiles for the region -
-#                 published on http://localhost:${MAPS_TILES_PORT:-3012}/
-#   - web:        static MapLibre GL frontend (pans to your location),
-#                 published on http://localhost:${MAPS_WEB_PORT:-3010}/ -
-#                 calls the tiles service directly by port (see
-#                 templates/config.js.template)
+#   - tiles:      tileserver-gl serving a pre-built .mbtiles per imported
+#                 region (one style/data source each - see
+#                 scripts/lib.sh) - published directly on
+#                 http://localhost:${MAPS_TILES_PORT:-3012}/ (e.g. for
+#                 ATAK raster tiles - see README.md), and also reachable
+#                 from "web" on this app's own private network as
+#                 "tiles:8080" (see web's nginx config).
+#   - web:        static MapLibre GL frontend (region picker + "you are
+#                 here" location marker), published on both:
+#                   - https://localhost:${MAPS_WEB_TLS_PORT:-3010}/
+#                     (default/primary - self-signed cert from
+#                     scripts/ensure-tls-cert.sh, browsers will warn
+#                     once, click through) - the Geolocation API (for
+#                     the location marker) only works over a secure
+#                     context when accessed via a LAN IP rather than
+#                     localhost, hence HTTPS being the default here.
+#                   - http://localhost:${MAPS_WEB_PORT:-3011}/ (plain
+#                     HTTP, e.g. for clients that can't handle a
+#                     self-signed cert - the location marker won't work
+#                     over this one unless accessed as localhost)
+#                 Both server blocks (see templates/nginx.conf) also
+#                 transparently reverse-proxy tileserver-gl's own paths
+#                 (/styles*, /data/*, /fonts/*, /sprites/*, /health)
+#                 through to "tiles" so the frontend can call them via
+#                 same-origin relative paths (avoids browsers blocking
+#                 "mixed content" once the page itself is HTTPS) - see
+#                 templates/nginx.conf's top comment for the full
+#                 rationale. This is this one app's own internal nginx
+#                 routing to its own sibling container, not a
+#                 shared/cross-app proxy (see docs/ARCHITECTURE.md).
 #
 # Run scripts/import-region.sh once (with MAP_REGION set in .env) before
 # starting these services - they expect data already present under
 # ${DATA_DIR:-./data}/. DATA_DIR defaults to ./data next to this file,
 # but can be set to an absolute path (e.g. an external drive mount) in
-# this app's .env.
+# this app's .env. Run scripts/add-region.sh any time afterward to
+# import additional regions (then `restart tiles` to pick them up).
+# scripts/ensure-tls-cert.sh (called by install.sh/up.sh) generates the
+# self-signed cert used below if it doesn't already exist.
 
 services:
   tiles:
@@ -30,12 +57,22 @@ services:
     environment:
       # nginx's built-in docker-entrypoint.d/20-envsubst-on-templates.sh
       # renders templates/config.js.template (mounted below) into
-      # config.js using these - no custom entrypoint script needed.
+      # config.js using this - only used by index.html to build the
+      # "switch to HTTPS" link when geolocation is unavailable over
+      # plain HTTP (see templates/config.js.template) - no bearing on
+      # how the frontend talks to tiles (same-origin proxy, see
+      # templates/nginx.conf).
       - NGINX_ENVSUBST_OUTPUT_DIR=/usr/share/nginx/html
-      - MAPS_TILES_PORT=${MAPS_TILES_PORT:-3012}
+      - MAPS_WEB_TLS_PORT=${MAPS_WEB_TLS_PORT:-3010}
     volumes:
       - ./web:/usr/share/nginx/html
       - ./templates/config.js.template:/etc/nginx/templates/config.js.template:ro
+      - ./templates/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./templates/tiles-proxy.conf:/etc/nginx/tiles-proxy.conf:ro
+      - ${DATA_DIR:-./data}/certs:/etc/nginx/certs:ro
     ports:
-      - "${MAPS_WEB_PORT:-3010}:80"
+      - "${MAPS_WEB_PORT:-3011}:80"
+      - "${MAPS_WEB_TLS_PORT:-3010}:443"
+    depends_on:
+      - tiles
     restart: unless-stopped

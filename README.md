@@ -22,6 +22,10 @@ Currently implemented:
 - **`apps/sdr`** - web-based SDR receiver (OpenWebRX+) for an RTL-SDR USB
   dongle - waterfall/spectrum display and AM/FM/SSB/digital-mode
   demodulation from any browser on the LAN.
+- **`apps/tak-server`** - self-hosted TAK Server (FreeTAKServer) for
+  ATAK/WinTAK/iTAK: situational awareness (CoT), chat, and data package
+  sharing over the LAN, with a generated connection package for
+  devices.
 - **`apps/dashboard`** - status page for every app above, with buttons
   to start/stop each one - the one deliberate exception to the
   "no central dashboard" design (see `docs/ARCHITECTURE.md`), since it
@@ -97,14 +101,15 @@ finish a step you skipped.
 
 Each app publishes its own port(s) directly - no shared entrypoint or
 landing page. After installing, each app's installer prints the URL to
-visit, e.g. `http://localhost:3010/` for `offline-maps`'s web UI, or
-`http://<device-ip>:3010/` from another device on the LAN. See each
+visit, e.g. `https://localhost:3010/` for `offline-maps`'s web UI, or
+`https://<device-ip>:3010/` from another device on the LAN. See each
 app's own README for its full list of ports:
 
 - [`apps/offline-maps/README.md`](apps/offline-maps/README.md)
 - [`apps/wikimed/README.md`](apps/wikimed/README.md)
 - [`apps/translate/README.md`](apps/translate/README.md)
 - [`apps/sdr/README.md`](apps/sdr/README.md)
+- [`apps/tak-server/README.md`](apps/tak-server/README.md)
 - [`apps/dashboard/README.md`](apps/dashboard/README.md)
 
 Stop an app with `./apps/<app-id>/down.sh` (start it again with
@@ -179,6 +184,7 @@ catasophie/
 │   ├── wikimed/            # offline medical/survival reference content (Kiwix)
 │   ├── translate/          # offline machine translation (LibreTranslate)
 │   ├── sdr/                # web SDR receiver (OpenWebRX+) for an RTL-SDR dongle
+│   ├── tak-server/         # self-hosted TAK Server (FreeTAKServer) for ATAK/WinTAK/iTAK
 │   ├── dashboard/          # status + start/stop page for the apps above (host process, not a container - see docs/ARCHITECTURE.md)
 │   ├── _template/          # copy this (via `make add-app`) to scaffold a new app
 │   └── cli/                # shell scripts driving install/uninstall/update/backup/restore

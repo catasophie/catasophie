@@ -13,9 +13,14 @@ For each app, `make backup` captures:
   it isn't worth including in every backup.
 - Named Podman volumes declared in the app's `docker-compose.yml`,
   exported via `podman volume export` - one `volume__<name>.tar` file
-  per volume (not currently used by any bundled app - both
-  `wikimed` and `offline-maps` use `DATA_DIR`-driven bind mounts
-  instead, precisely so their data can live on an external drive).
+  per volume. Most apps use `DATA_DIR`-driven bind mounts instead
+  (precisely so their data can live on an external drive) - `wikimed`
+  and `offline-maps` both do. `tak-server` is the one exception so far:
+  its `freetakserver-ui` image bakes its application source into the
+  same path its data would otherwise live at, so a plain bind mount
+  hides the image's own files and the container fails to start (see
+  the comment in `apps/tak-server/docker-compose.yml`) - a named volume
+  is required there instead, which this backup path covers.
 
 Backups are written to `backups/<app-id>/<timestamp>/` and are entirely
 local/untracked (`backups/` is gitignored - these can contain secrets

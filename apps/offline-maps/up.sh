@@ -7,6 +7,7 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${APP_DIR}/../cli/scripts/lib/common.sh"
 
 ensure_env_file "$APP_DIR"
+"$BASH" "${APP_DIR}/scripts/ensure-tls-cert.sh"
 
 echo "Starting offline-maps..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d

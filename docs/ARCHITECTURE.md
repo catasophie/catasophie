@@ -20,24 +20,40 @@ port(s).
  │   │  disabled for now)  │   │  ZIMs by default)  │   │  translation)  │   │
  │   └──────────┬──────────┘   └─────────┬──────────┘   └────────┬────────┘   │
  └──────────────┼─────────────────────────┼───────────────────────┼──────────┘
-                │ :3010 (web)             │ :3020 (kiwix)         │ :3030
+                │ :3010/:3011 (web, https/http)         │ :3020 (kiwix)         │ :3030
                 │ :3012 (tiles)           │                       │
                 ▼                         ▼                       ▼
-          http://<device-ip>:<port>/  (LAN or localhost)
+           http://<device-ip>:<port>/  (LAN or localhost)
 ```
+
+(Not every app is pictured above - see each app's own README for its
+full port list, e.g. `apps/sdr` and `apps/tak-server`. `apps/tak-server`
+publishes `:19023` (admin UI), `:8087`/`:8089` (plain/TLS CoT - what
+ATAK/WinTAK/iTAK actually connect to), and `:8080`/`:8443` (plain/TLS
+data package transfer).)
+
 
 ## Request flow
 
 1. A client (phone/laptop) connects to the device's LAN/WiFi and browses
-   directly to `http://<device-ip>:<port>/` for whichever app/service it
-   wants (e.g. `:3010` for the maps frontend, `:3020` for the offline
-   Kiwix reference content).
+   directly to `http://<device-ip>:<port>/` (or `https://` where an app
+   defaults to that - e.g. offline-maps, see point 3) for whichever
+   app/service it wants (e.g. `:3010` for the maps frontend, `:3020`
+   for the offline Kiwix reference content).
 2. Each container publishes its port straight to the host - no routing,
    discovery, or path-rewriting layer in between.
 3. Where a frontend needs to call sibling services (e.g. offline-maps'
-   static page calling its tiles backend), it does so
-   directly by port, using a small `config.js` rendered from `.env` at
-   container start (see `apps/offline-maps/templates/config.js.template`).
+   static page calling its tiles backend), it does so through that
+   app's own nginx (see `apps/offline-maps/templates/nginx.conf`),
+   which reverse-proxies specific tileserver-gl paths through to the
+   `tiles` container by its compose service name - this is internal
+   routing owned entirely by that one app, not a shared/cross-app
+   proxy (see the network note below). offline-maps also publishes a
+   plain-HTTP fallback port alongside its default HTTPS one (self-signed
+   cert, `scripts/ensure-tls-cert.sh`), since some browser APIs (e.g.
+   Geolocation, used for its "you are here" marker) require a secure
+   context when accessed via LAN IP rather than `localhost` - HTTPS is
+   the default there specifically so that works out of the box.
 
 ## Why this design
 
