@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 SCRIPTS := apps/cli/scripts
 
-.PHONY: help bootstrap install uninstall update backup restore add-app
+.PHONY: help bootstrap install uninstall update backup restore add-app hotspot-up hotspot-down
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | sort
@@ -26,6 +26,12 @@ restore: ## Restore an app from a backup: make restore ARGS="offline-maps"
 
 add-app: ## Scaffold a new app (prompts for app id + port): make add-app
 	./$(SCRIPTS)/add-app.sh
+
+hotspot-up: ## Turn this device's WiFi into a local access point for clients to connect to
+	./$(SCRIPTS)/hotspot-up.sh
+
+hotspot-down: ## Stop the WiFi access point started by hotspot-up (ARGS="--remove" to forget it)
+	./$(SCRIPTS)/hotspot-down.sh $(ARGS)
 
 start:
 	./apps/dashboard/up.sh

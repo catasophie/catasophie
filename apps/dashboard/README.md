@@ -118,6 +118,18 @@ round-trip doesn't add latency to the frequent status poll:
 - **RAM** and **Storage** (root filesystem, `df -kP /`) are computed
   fresh on every request/poll - both are cheap, instant reads with no
   need for caching.
+- **Hotspot** shows and toggles the WiFi access point set up by
+  `apps/cli/scripts/hotspot-up.sh`/`hotspot-down.sh` (see the repo
+  root's `README.md`). This control only appears if `nmcli`
+  (NetworkManager) is present on the host; if the hotspot hasn't been
+  configured yet, it shows a hint to run `make hotspot-up` once over SSH
+  instead of a toggle - first-time setup needs to pick a WiFi interface
+  and SSID/password interactively, which doesn't fit a button click
+  (same reasoning as "install" for other apps, below). Once configured,
+  clicking "Turn on"/"Turn off" runs the same `hotspot-up.sh`/
+  `hotspot-down.sh` scripts non-interactively (all settings are already
+  saved from the first run), and the status dot/label update from the
+  same status poll as the rest of the host panel.
 
 ## How status/start/stop works
 
@@ -157,10 +169,11 @@ in front.
 ## Files
 
 ```
-server.js              Fastify app + routes (/, /api/status, /api/rescan, /apps/:id/start|stop)
+server.js              Fastify app + routes (/, /api/status, /api/rescan, /apps/:id/start|stop, /api/hotspot/:action)
 lib/registry.js         scans apps/<id>/manifest.json, resolves live port from each app's .env
 lib/network.js          determines the LAN host advertised in every app's URL
 lib/hostinfo.js          IP/connection/CPU/RAM/storage for the Host panel
+lib/hotspot.js          WiFi hotspot status + toggle (apps/cli/scripts/hotspot-up.sh/-down.sh)
 lib/status.js           installed/running checks + start/stop via other apps' scripts
 views/                  Handlebars templates (layout, index, card partial)
 public/                 style.css + client-side JS (filtering, polling, icons)

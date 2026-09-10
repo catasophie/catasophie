@@ -176,6 +176,21 @@ header.top {
 .status-conn-isolated .status-dot { background: var(--red); }
 .status-conn-isolated { color: var(--red); }
 
+.status-hotspot-on .status-dot { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.status-hotspot-on { color: var(--green); }
+
+.status-hotspot-off .status-dot { background: var(--text-dim); }
+.status-hotspot-off { color: var(--text-dim); }
+
+.host-hotspot {
+  gap: 8px;
+}
+
+.hotspot-toggle-btn {
+  align-self: flex-start;
+  flex: 0 0 auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .host-bar-fill { transition: none; }
 }

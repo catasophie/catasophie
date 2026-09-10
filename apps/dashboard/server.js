@@ -24,6 +24,7 @@ const { scanApps, CATASOPHIE_ROOT } = require("./lib/registry");
 const { getAdvertiseHost } = require("./lib/network");
 const { statusesFor, startApp, stopApp } = require("./lib/status");
 const hostinfo = require("./lib/hostinfo");
+const hotspot = require("./lib/hotspot");
 
 // Load .env (simple KEY=VALUE parser, no dependency needed) so
 // DASHBOARD_PORT etc. are available without requiring dotenv.
@@ -142,7 +143,8 @@ async function buildServer() {
       connection: connectionInfo,
       cpu: hostinfo.getCpuUsage(),
       memory: hostinfo.getMemoryInfo(),
-      storage
+      storage,
+      hotspot: await hotspot.getHotspotStatus(CATASOPHIE_ROOT)
     };
   }
 
@@ -249,6 +251,24 @@ async function buildServer() {
       await stopApp(CATASOPHIE_ROOT, id);
       const status = await statusesFor(CATASOPHIE_ROOT, [app]);
       return reply.send({ ok: true, status: status[id] });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ ok: false, error: String(err.message || err) });
+    }
+  });
+
+  // Turns the host's WiFi hotspot on/off (see apps/cli/scripts/hotspot-up.sh
+  // and hotspot-down.sh). "up" is rejected if the hotspot hasn't been
+  // configured yet via `make hotspot-up` at least once (see lib/hotspot.js).
+  fastify.post("/api/hotspot/:action", async (request, reply) => {
+    const { action } = request.params;
+    if (!["up", "down"].includes(action)) {
+      return reply.code(404).send({ ok: false, error: "unknown hotspot action" });
+    }
+    try {
+      await hotspot.toggleHotspot(CATASOPHIE_ROOT, action);
+      const status = await hotspot.getHotspotStatus(CATASOPHIE_ROOT);
+      return reply.send({ ok: true, hotspot: status });
     } catch (err) {
       request.log.error(err);
       return reply.code(500).send({ ok: false, error: String(err.message || err) });

@@ -138,6 +138,33 @@ Each app also ships its own `apps/<app-id>/uninstall.sh` (same flags),
 which `apps/cli/scripts/uninstall.sh` calls under the hood - run it
 directly to remove just that app without touching anything else.
 
+## Connecting clients with no existing WiFi/router (hotspot)
+
+If there's no existing WiFi network to join (or you'd rather keep this
+device fully offline/self-contained), turn its own WiFi adapter into an
+access point so phones/laptops can connect directly to it and reach the
+apps above:
+
+```sh
+make hotspot-up
+```
+
+This uses NetworkManager (`nmcli`), which ships by default on Raspberry
+Pi OS (Bullseye and newer). It prompts once for the WiFi interface (if
+more than one), an SSID, and a password (blank for an open network),
+then brings up an access point at `10.42.0.1` by default. Connect a
+device to that SSID, then reach installed apps at
+`http://10.42.0.1:<app-port>/`. Settings are saved to
+`apps/cli/scripts/.hotspot.env` (gitignored) and reused on later runs,
+so it's safe to add to a startup script/cron job for automatic hotspot
+mode on boot.
+
+Stop it with `make hotspot-down` (add `ARGS="--remove"` to also delete
+the saved connection profile). Note this uses the device's own WiFi
+radio as the AP - if it's also your only way to reach the internet or
+another network, it won't be usable for that while the hotspot is up;
+use a second WiFi adapter or Ethernet for uplink if needed.
+
 ## Storing data on an external drive
 
 Each app's installer prompts for `DATA_DIR` - leave it blank to keep
@@ -195,6 +222,7 @@ catasophie/
 │           ├── update.sh             # git pull + update apps, with auto backup/rollback
 │           ├── backup.sh / restore.sh # manual backup + restore (data/volumes/.env)
 │           ├── add-app.sh             # scaffold a new app from _template
+│           ├── hotspot-up.sh / hotspot-down.sh # turn WiFi into a local access point for clients
 │           └── lib/common.sh          # shared install/backup/restore helpers
 ├── AGENTS.md
 └── docs/

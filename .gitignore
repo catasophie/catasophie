@@ -1,4 +1,5 @@
 .env
+.hotspot.env
 .installed
 **/.install-steps
 data/

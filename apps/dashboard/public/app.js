@@ -178,6 +178,60 @@
     } else if (storageText) {
       storageText.textContent = "Unavailable";
     }
+
+    updateHotspotPanel(host.hotspot);
+  }
+
+  // --- Hotspot toggle -------------------------------------------------------
+  function updateHotspotPanel(hotspotStatus) {
+    const item = document.getElementById("host-hotspot-item");
+    if (!item || !hotspotStatus || !hotspotStatus.supported) return;
+
+    const statusEl = document.getElementById("host-hotspot-status");
+    const labelEl = document.getElementById("host-hotspot-label");
+    const btn = document.getElementById("hotspot-toggle-btn");
+
+    if (!hotspotStatus.configured) {
+      // Not-configured state has no toggle button server-side; nothing
+      // to update here (would need a page reload to show the toggle
+      // once configured via the CLI - the same as a newly added app).
+      return;
+    }
+
+    if (statusEl) {
+      statusEl.className = `status status-hotspot-${hotspotStatus.active ? "on" : "off"}`;
+    }
+    if (labelEl) {
+      labelEl.textContent = hotspotStatus.active ? `On (${hotspotStatus.ssid})` : "Off";
+    }
+    if (btn && btn.getAttribute("data-pending") !== "true") {
+      btn.disabled = false;
+      btn.setAttribute("data-active", hotspotStatus.active ? "true" : "false");
+      btn.textContent = hotspotStatus.active ? "Turn off" : "Turn on";
+    }
+  }
+
+  async function toggleHotspot(btn) {
+    const isActive = btn.getAttribute("data-active") === "true";
+    const action = isActive ? "down" : "up";
+    btn.setAttribute("data-pending", "true");
+    btn.disabled = true;
+    btn.textContent = "Working…";
+    try {
+      const res = await fetch(`/api/hotspot/${action}`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      btn.removeAttribute("data-pending");
+      updateHotspotPanel(data.hotspot);
+    } catch (err) {
+      console.error("hotspot toggle failed", err);
+      btn.removeAttribute("data-pending");
+      btn.disabled = false;
+      btn.textContent = isActive ? "Turn off" : "Turn on";
+      await refreshStatuses();
+    }
   }
 
   async function refreshStatuses() {
@@ -270,6 +324,7 @@
     initActions();
 
     document.getElementById("refresh-btn")?.addEventListener("click", (e) => rescan(e.currentTarget));
+    document.getElementById("hotspot-toggle-btn")?.addEventListener("click", (e) => toggleHotspot(e.currentTarget));
 
     tickClock();
     setInterval(tickClock, 1000 * 30);

@@ -54,6 +54,24 @@
       <span class="host-value" id="host-storage-text">{{formatBytes host.storage.availableBytes}} free of {{formatBytes host.storage.totalBytes}} ({{host.storage.usedPercent}}% used)</span>
     {{/if}}
   </div>
+  {{#if host.hotspot.supported}}
+    <div class="host-item host-hotspot" id="host-hotspot-item">
+      <span class="host-label">Hotspot</span>
+      {{#if host.hotspot.configured}}
+        <span class="host-value">
+          <span class="status status-hotspot-{{#if host.hotspot.active}}on{{else}}off{{/if}}" id="host-hotspot-status">
+            <span class="status-dot"></span>
+            <span class="status-label" id="host-hotspot-label">{{#if host.hotspot.active}}On ({{host.hotspot.ssid}}){{else}}Off{{/if}}</span>
+          </span>
+        </span>
+        <button type="button" id="hotspot-toggle-btn" class="action-btn hotspot-toggle-btn" data-active="{{#if host.hotspot.active}}true{{else}}false{{/if}}">
+          {{#if host.hotspot.active}}Turn off{{else}}Turn on{{/if}}
+        </button>
+      {{else}}
+        <span class="host-value" id="host-hotspot-text">Not configured - run <code>make hotspot-up</code> once over SSH</span>
+      {{/if}}
+    </div>
+  {{/if}}
 </section>
 
 <div class="controls">

@@ -81,7 +81,8 @@ install_podman_compose_fallback() {
 # missing it, causing confusing "newuidmap: ... not allowed" failures.
 ensure_subuid_subgid() {
   [ "$(id -u)" -eq 0 ] && return 0
-  local user; user="$(id -un)"
+  local user
+  user="$(id -un)"
 
   if grep -qE "^${user}:" /etc/subuid 2>/dev/null && grep -qE "^${user}:" /etc/subgid 2>/dev/null; then
     log "subuid/subgid range already present for ${user}"
@@ -111,49 +112,49 @@ bootstrap_linux() {
 
   local family=""
   case "$id $id_like" in
-    *debian*|*ubuntu*) family="debian" ;;
-    *rhel*|*fedora*|*centos*) family="rhel" ;;
-    *arch*) family="arch" ;;
-    *)
-      case "$id" in
-        debian|ubuntu|raspbian) family="debian" ;;
-        fedora|rhel|centos|rocky|almalinux) family="rhel" ;;
-        arch|manjaro) family="arch" ;;
-      esac
-      ;;
+  *debian* | *ubuntu*) family="debian" ;;
+  *rhel* | *fedora* | *centos*) family="rhel" ;;
+  *arch*) family="arch" ;;
+  *)
+    case "$id" in
+    debian | ubuntu | raspbian) family="debian" ;;
+    fedora | rhel | centos | rocky | almalinux) family="rhel" ;;
+    arch | manjaro) family="arch" ;;
+    esac
+    ;;
   esac
 
   case "$family" in
-    debian)
-      local pkgs=(make git curl tar whiptail uidmap slirp4netns)
-      command -v podman >/dev/null 2>&1 || pkgs+=(podman)
-      command -v podman-compose >/dev/null 2>&1 || pkgs+=(podman-compose)
-      install_pkgs_apt "${pkgs[@]}"
-      install_podman_compose_fallback
-      ;;
-    rhel)
-      local pkgs=(make git curl tar newt shadow-utils slirp4netns)
-      command -v podman >/dev/null 2>&1 || pkgs+=(podman)
-      command -v podman-compose >/dev/null 2>&1 || pkgs+=(podman-compose)
-      if command -v dnf >/dev/null 2>&1; then
-        install_pkgs_dnf "${pkgs[@]}"
-      else
-        install_pkgs_yum "${pkgs[@]}"
-      fi
-      install_podman_compose_fallback
-      ;;
-    arch)
-      local pkgs=(make git curl tar libnewt shadow slirp4netns)
-      command -v podman >/dev/null 2>&1 || pkgs+=(podman)
-      command -v podman-compose >/dev/null 2>&1 || pkgs+=(podman-compose)
-      install_pkgs_pacman "${pkgs[@]}"
-      install_podman_compose_fallback
-      ;;
-    *)
-      echo "error: unsupported/undetected Linux distro (ID='${id}', ID_LIKE='${id_like}')." >&2
-      echo "  Install manually: podman, podman-compose, make, git - see https://podman.io/docs/installation" >&2
-      exit 1
-      ;;
+  debian)
+    local pkgs=(make git curl tar whiptail uidmap slirp4netns nodejs)
+    command -v podman >/dev/null 2>&1 || pkgs+=(podman)
+    command -v podman-compose >/dev/null 2>&1 || pkgs+=(podman-compose)
+    install_pkgs_apt "${pkgs[@]}"
+    install_podman_compose_fallback
+    ;;
+  rhel)
+    local pkgs=(make git curl tar newt shadow-utils slirp4netns nodejs)
+    command -v podman >/dev/null 2>&1 || pkgs+=(podman)
+    command -v podman-compose >/dev/null 2>&1 || pkgs+=(podman-compose)
+    if command -v dnf >/dev/null 2>&1; then
+      install_pkgs_dnf "${pkgs[@]}"
+    else
+      install_pkgs_yum "${pkgs[@]}"
+    fi
+    install_podman_compose_fallback
+    ;;
+  arch)
+    local pkgs=(make git curl tar libnewt shadow slirp4netns nodejs)
+    command -v podman >/dev/null 2>&1 || pkgs+=(podman)
+    command -v podman-compose >/dev/null 2>&1 || pkgs+=(podman-compose)
+    install_pkgs_pacman "${pkgs[@]}"
+    install_podman_compose_fallback
+    ;;
+  *)
+    echo "error: unsupported/undetected Linux distro (ID='${id}', ID_LIKE='${id_like}')." >&2
+    echo "  Install manually: podman, podman-compose, make, git - see https://podman.io/docs/installation" >&2
+    exit 1
+    ;;
   esac
 
   ensure_subuid_subgid
@@ -196,13 +197,13 @@ bootstrap_macos() {
 }
 
 case "$(uname -s)" in
-  Linux) bootstrap_linux ;;
-  Darwin) bootstrap_macos ;;
-  *)
-    echo "error: unsupported OS '$(uname -s)' - install podman, podman-compose, make, and git manually." >&2
-    echo "  See https://podman.io/docs/installation" >&2
-    exit 1
-    ;;
+Linux) bootstrap_linux ;;
+Darwin) bootstrap_macos ;;
+*)
+  echo "error: unsupported OS '$(uname -s)' - install podman, podman-compose, make, and git manually." >&2
+  echo "  See https://podman.io/docs/installation" >&2
+  exit 1
+  ;;
 esac
 
 echo
