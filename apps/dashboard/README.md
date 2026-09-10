@@ -38,6 +38,31 @@ Then visit `http://localhost:8000/` (or whatever `DASHBOARD_PORT` is set
 to in `.env` - also reachable at `http://<device-ip>:8000/` from another
 device on the LAN).
 
+## Autostart on boot
+
+`install.sh` prompts (default: yes) to register a system-level systemd
+unit, `catasophie-dashboard.service`, so the dashboard starts
+automatically whenever the host boots - without needing anyone to log
+in first (unlike a `systemctl --user` unit, which would additionally
+need `loginctl enable-linger`). The unit still runs the dashboard as
+your own non-root user via `up.sh`/`down.sh` - it does not run as root
+and behaves identically to starting it by hand (same PID file, same
+`dashboard.log`).
+
+This only applies on hosts with systemd (`systemctl` on `PATH`); it's
+skipped with a note otherwise. You can manage it independently of
+`install.sh`:
+
+```sh
+./apps/dashboard/scripts/install-autostart.sh    # enable (idempotent)
+./apps/dashboard/scripts/uninstall-autostart.sh  # disable and remove the unit
+systemctl status catasophie-dashboard             # check it's running
+journalctl -u catasophie-dashboard -f              # follow its logs
+```
+
+`uninstall.sh` always disables and removes this unit first, regardless
+of whether autostart was enabled.
+
 ## Configuring which apps show up
 
 There's no config file to edit here - the dashboard discovers apps by
@@ -179,9 +204,13 @@ views/                  Handlebars templates (layout, index, card partial)
 public/                 style.css + client-side JS (filtering, polling, icons)
 install.sh / up.sh /
   down.sh / uninstall.sh   host-process lifecycle (not podman-compose - see above)
+scripts/install-autostart.sh /
+  uninstall-autostart.sh  registers/removes the systemd boot-autostart unit
+catasophie-dashboard.service.template
+                         systemd unit template rendered by install-autostart.sh
 .env.example            DASHBOARD_PORT, DASHBOARD_HOST, DASHBOARD_ADVERTISE_HOST,
                          DASHBOARD_SYSTEM_NAME, DASHBOARD_LOCATION,
-                         DASHBOARD_STATUS_POLL_INTERVAL_SECONDS
+                         DASHBOARD_STATUS_POLL_INTERVAL_SECONDS, DASHBOARD_AUTOSTART
 ```
 
 ## Notes for offline/low-power use

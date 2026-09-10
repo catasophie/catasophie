@@ -1,0 +1,19 @@
+[Unit]
+Description=catasophie dashboard
+Documentation=file://__APP_DIR__/README.md
+After=network.target
+
+[Service]
+Type=forking
+User=__DASHBOARD_USER__
+Group=__DASHBOARD_GROUP__
+WorkingDirectory=__APP_DIR__
+Environment=PATH=__DASHBOARD_PATH__
+ExecStart=__APP_DIR__/up.sh
+ExecStop=__APP_DIR__/down.sh
+PIDFile=__APP_DIR__/.dashboard.pid
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

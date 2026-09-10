@@ -39,5 +39,19 @@ echo "Installing dashboard dependencies (npm install)..."
 
 "$BASH" "${APP_DIR}/up.sh"
 
+if command -v systemctl >/dev/null 2>&1; then
+  prompt_choice_if_unset DASHBOARD_AUTOSTART \
+    "Autostart the dashboard on boot (systemd, no login required)?" \
+    "yes no" "yes" "$ENV_FILE"
+  if [ "${DASHBOARD_AUTOSTART}" = "yes" ]; then
+    "$BASH" "${APP_DIR}/scripts/install-autostart.sh"
+  else
+    echo "Skipping boot autostart. Enable later with:"
+    echo "  ./apps/dashboard/scripts/install-autostart.sh"
+  fi
+else
+  echo "note: systemd not found on this host - skipping boot autostart setup."
+fi
+
 mark_installed dashboard
 echo "== dashboard installed. Visit http://localhost:${DASHBOARD_PORT:-8000}/ =="

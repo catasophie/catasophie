@@ -107,6 +107,13 @@ no shared infra, no orchestrator" rule above - on purpose, and narrowly:
   being the only app in `apps/` that isn't itself a container.
 - Like the rest of the repo, it has no authentication - anyone who can
   reach its port can start/stop any app it lists.
+- It optionally registers a system-level systemd unit
+  (`catasophie-dashboard.service`, via
+  `apps/dashboard/scripts/install-autostart.sh`, prompted during
+  `install.sh`) so it starts automatically on host boot without needing
+  a login session. It's still the only app in `apps/` that does this -
+  every other app is started explicitly via its own `up.sh`, per "No
+  dynamic lazy-start" above.
 
 See `apps/dashboard/README.md` for the full rationale and how it works.
 

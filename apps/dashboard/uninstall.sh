@@ -26,7 +26,7 @@ for arg in "$@"; do
 done
 
 echo "== dashboard uninstall =="
-echo "This will stop the dashboard process and remove:"
+echo "This will stop the dashboard process, disable boot autostart, and remove:"
 echo "  - ${APP_DIR}/.env and .install-steps"
 echo "  - ${APP_DIR}/.dashboard.pid and dashboard.log"
 [ "$KEEP_DEPS" = "1" ] || echo "  - ${APP_DIR}/node_modules"
@@ -36,6 +36,7 @@ if [ "$ASSUME_YES" != "1" ]; then
   [ "$answer" = "yes" ] || { echo "Aborted."; exit 1; }
 fi
 
+"$BASH" "${APP_DIR}/scripts/uninstall-autostart.sh" || true
 "$BASH" "${APP_DIR}/down.sh" || true
 
 rm -f "${APP_DIR}/.env" "${APP_DIR}/.install-steps" "${APP_DIR}/.dashboard.pid" "${APP_DIR}/dashboard.log"
