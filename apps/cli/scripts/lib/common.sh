@@ -378,16 +378,25 @@ app_volume_names() {
   done
 }
 
+# Returns the app's directory. Ids prefixed "external/<name>" (see
+# apps/cli/scripts/lib/external.sh and docs/EXTERNAL_APPS.md) resolve
+# under apps/external/<name> instead of apps/<name> - every other
+# helper below (compose file, data dir, project name, backup/restore)
+# is built on top of this, so external apps work with all of them with
+# no further special-casing.
+_app_dir_for() {
+  local app_id="$1"
+  if [[ "$app_id" == external/* ]]; then
+    echo "${CATASOPHIE_ROOT}/apps/external/${app_id#external/}"
+  else
+    echo "${CATASOPHIE_ROOT}/apps/${app_id}"
+  fi
+}
+
 # Returns the app's compose file path.
 _compose_file_for() {
   local app_id="$1"
-  echo "${CATASOPHIE_ROOT}/apps/${app_id}/docker-compose.yml"
-}
-
-# Returns the app's directory.
-_app_dir_for() {
-  local app_id="$1"
-  echo "${CATASOPHIE_ROOT}/apps/${app_id}"
+  echo "$(_app_dir_for "$app_id")/docker-compose.yml"
 }
 
 # Resolves the app's actual data directory: reads DATA_DIR from the
@@ -473,10 +482,17 @@ remove_data_dir() {
 }
 
 # podman-compose's project name (used in container labels) defaults to
-# the compose file's directory name - i.e. the app id itself.
+# the compose file's directory name - i.e. the app id itself for
+# first-party apps, or just the trailing part for "external/<name>"
+# ids (that directory is apps/external/<name>, not apps/external/<name>
+# nested under a directory literally called "external/<name>").
 _project_name_for() {
   local app_id="$1"
-  echo "$app_id"
+  if [[ "$app_id" == external/* ]]; then
+    echo "${app_id#external/}"
+  else
+    echo "$app_id"
+  fi
 }
 
 # Backs up one app's .env, data dir (wherever DATA_DIR currently points -

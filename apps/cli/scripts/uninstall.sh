@@ -21,6 +21,8 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 # shellcheck source=apps/cli/scripts/lib/common.sh
 source "apps/cli/scripts/lib/common.sh"
+# shellcheck source=apps/cli/scripts/lib/external.sh
+source "apps/cli/scripts/lib/external.sh"
 
 check_deps
 
@@ -47,8 +49,12 @@ if [ "${#targets[@]}" -eq 0 ]; then
   # in .installed) - that marker can be stale/incomplete (e.g. an
   # install.sh that crashed partway, before reaching mark_installed, as
   # happened here), and a "remove everything" pass should be thorough
-  # regardless of it.
+  # regardless of it. Also targets every apps/external/<id> that meets
+  # the minimum contract (manifest.json + docker-compose.yml), whether
+  # or not it ships its own uninstall.sh.
   mapfile -t targets < <(list_available_apps | sort)
+  mapfile -t external_targets < <(list_external_apps | sort)
+  targets+=("${external_targets[@]}")
 fi
 
 echo "== make uninstall =="
@@ -80,7 +86,9 @@ for id in "${targets[@]}"; do
   echo "=========================================="
   echo " Uninstalling: ${id}"
   echo "=========================================="
-  if [ -x "apps/${id}/uninstall.sh" ]; then
+  if [[ "$id" == external/* ]]; then
+    external_uninstall "$id" "${flags[@]}"
+  elif [ -x "apps/${id}/uninstall.sh" ]; then
     "apps/${id}/uninstall.sh" "${flags[@]}"
   else
     echo "warn: apps/${id}/uninstall.sh not found, skipping" >&2

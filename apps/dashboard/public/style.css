@@ -344,6 +344,21 @@ main {
 .status-not-installed .status-dot { background: var(--text-dim); }
 .status-not-installed { color: var(--text-dim); }
 
+.status-needs-review .status-dot { background: var(--amber); }
+.status-needs-review { color: var(--amber); }
+
+.badge-external {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 8px;
+}
+
 .status-pending .status-dot {
   background: var(--amber);
   animation: pulse 1s ease-in-out infinite;

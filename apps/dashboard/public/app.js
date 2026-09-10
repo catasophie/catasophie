@@ -101,15 +101,15 @@
     const label = statusEl.querySelector(".status-label");
     if (label) {
       label.textContent =
-        status === "running" ? "Online" : status === "pending" ? "Working…" : status === "not-installed" ? "Not installed" : "Offline";
+        status === "running" ? "Online" : status === "pending" ? "Working…" : status === "not-installed" ? "Not installed" : status === "needs-review" ? "Needs review" : "Offline";
     }
 
     card.classList.toggle("card-offline", status === "stopped" || status === "unknown");
-    card.classList.toggle("card-not-installed", status === "not-installed");
+    card.classList.toggle("card-not-installed", status === "not-installed" || status === "needs-review");
 
     const startBtn = card.querySelector(".start-btn");
     const stopBtn = card.querySelector(".stop-btn");
-    if (startBtn) startBtn.disabled = status === "running" || status === "pending";
+    if (startBtn) startBtn.disabled = status === "running" || status === "pending" || status === "needs-review";
     if (stopBtn) stopBtn.disabled = status !== "running" || status === "pending";
   }
 

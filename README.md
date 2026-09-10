@@ -229,6 +229,7 @@ catasophie/
     ├── ARCHITECTURE.md
     ├── ADDING_AN_APP.md
     ├── BACKUP_RESTORE.md
+    ├── EXTERNAL_APPS.md
     └── ROADMAP.md
 ```
 
@@ -242,10 +243,17 @@ make add-app
 See `docs/ADDING_AN_APP.md` for the full convention (published port,
 data directory, install/uninstall scripts).
 
+Want to add a third-party app that isn't shipped in this repo (found
+online, or your own)? See `apps/external/README.md` and
+`docs/EXTERNAL_APPS.md` instead - clone it into `apps/external/<id>`
+yourself, review it, and it's managed the same way (`make install`,
+`make update`, dashboard start/stop) as any other app.
+
 ## Design docs
 
 - `docs/ARCHITECTURE.md` - how each app is structured and why
 - `docs/ADDING_AN_APP.md` - the app contract (ports, data, install/uninstall)
 - `docs/BACKUP_RESTORE.md` - backup/restore + automatic update rollback
+- `docs/EXTERNAL_APPS.md` - adding third-party apps not shipped in this repo
 - `docs/ROADMAP.md` - candidate future apps/tools
 - `AGENTS.md` - instructions for AI coding agents working in this repo

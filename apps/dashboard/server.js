@@ -86,7 +86,8 @@ function buildAppsForView(apps, statuses) {
     status: statuses[app.id] || "unknown",
     isRunning: statuses[app.id] === "running",
     isStopped: statuses[app.id] === "stopped",
-    isNotInstalled: statuses[app.id] === "not-installed"
+    isNotInstalled: statuses[app.id] === "not-installed",
+    isNeedsReview: statuses[app.id] === "needs-review"
   }));
 }
 
@@ -198,7 +199,8 @@ async function buildServer() {
         status: a.status,
         isRunning: a.isRunning,
         isStopped: a.isStopped,
-        isNotInstalled: a.isNotInstalled
+        isNotInstalled: a.isNotInstalled,
+        isNeedsReview: a.isNeedsReview
       }))
     });
   });
@@ -220,7 +222,8 @@ async function buildServer() {
         status: a.status,
         isRunning: a.isRunning,
         isStopped: a.isStopped,
-        isNotInstalled: a.isNotInstalled
+        isNotInstalled: a.isNotInstalled,
+        isNeedsReview: a.isNeedsReview
       }))
     });
   });

@@ -11,6 +11,13 @@ shared proxy or network involved.
 > `docs/ARCHITECTURE.md` for why. Everything below describes the
 > contract for every other app.
 
+> **Adding a third-party app instead?** If you want to run something
+> that isn't (and won't be) part of this repo - found online, or your
+> own - see `docs/EXTERNAL_APPS.md` instead: `apps/external/<id>/` uses
+> a loosened version of this contract (only `docker-compose.yml` +
+> `manifest.json` are required) and is gitignored entirely, since it's
+> manually cloned in by the user rather than committed here.
+
 ```sh
 make add-app
 # or: ./apps/cli/scripts/add-app.sh

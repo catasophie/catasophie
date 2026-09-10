@@ -14,3 +14,9 @@ backups/
 apps/offline-maps/web/config.js
 *.pid
 *.log
+
+# Third-party apps the user manually clones in - see
+# apps/external/README.md and docs/EXTERNAL_APPS.md. Never committed:
+# these are the user's own checkouts, not part of this repo.
+apps/external/*
+!apps/external/README.md

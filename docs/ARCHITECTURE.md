@@ -122,3 +122,16 @@ See `apps/dashboard/README.md` for the full rationale and how it works.
 See the top-level `README.md` for the full directory tree and
 `docs/ADDING_AN_APP.md` for the per-app contract (which applies to every
 app under `apps/` except `apps/dashboard`, see above).
+
+## Third-party apps: another deliberate, narrow exception
+
+`apps/external/` is where a user can add their own third-party apps -
+things they found or wrote themselves - without a PR to this repo or
+full compliance with `docs/ADDING_AN_APP.md`'s contract. It only exists
+because the user manually cloned something there
+(`git clone <url> apps/external/<id>`); there's no wizard that does the
+cloning, and nothing under it is ever committed to this repo. See
+`docs/EXTERNAL_APPS.md` for the loosened contract (just
+`docker-compose.yml` + `manifest.json` required), the mandatory review
+gate before any of it runs, and how it fits into
+install/uninstall/update/backup/restore and the dashboard.

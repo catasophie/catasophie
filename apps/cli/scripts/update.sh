@@ -15,6 +15,8 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 # shellcheck source=apps/cli/scripts/lib/common.sh
 source "apps/cli/scripts/lib/common.sh"
+# shellcheck source=apps/cli/scripts/lib/external.sh
+source "apps/cli/scripts/lib/external.sh"
 
 check_deps
 
@@ -40,13 +42,18 @@ else
   echo "Not a git checkout, skipping git pull."
 fi
 
-# update_one <app-id> <compose_file>
+# update_one <app-id>
 # Backs up (if enabled), pulls + recreates, health-checks, and rolls back
 # on failure. Returns 0 on success (or successful rollback message), 1 if
-# the app is left broken after a failed rollback attempt.
+# the app is left broken after a failed rollback attempt, 2 if an
+# external app pulled new commits that need review before it can be
+# restarted (see apps/cli/scripts/lib/external.sh's external_update).
 update_one() {
-  local app_id="$1" compose_file="$2"
+  local app_id="$1"
+  local compose_file; compose_file=$(_compose_file_for "$app_id")
   local backup_dir="" snapshot=""
+  local is_external=0
+  [[ "$app_id" == external/* ]] && is_external=1
 
   echo
   echo "=========================================="
@@ -63,12 +70,26 @@ update_one() {
 
   snapshot=$(snapshot_image_ids "$app_id")
 
-  echo "Pulling + recreating ${app_id}..."
-  if ! podman-compose -f "$compose_file" pull; then
-    echo "warn: pull failed for ${app_id}, containers left as-is" >&2
-    return 1
+  if [ "$is_external" -eq 1 ]; then
+    # external_update handles its own git pull + review gate + compose
+    # pull/up - see apps/cli/scripts/lib/external.sh.
+    local rc
+    external_update "$app_id" && rc=0 || rc=$?
+    if [ "$rc" -eq 2 ]; then
+      echo "${app_id}: needs review before it can be restarted - see message above." >&2
+      return 2
+    elif [ "$rc" -ne 0 ]; then
+      echo "warn: update failed for ${app_id}, containers left as-is" >&2
+      return 1
+    fi
+  else
+    echo "Pulling + recreating ${app_id}..."
+    if ! podman-compose -f "$compose_file" pull; then
+      echo "warn: pull failed for ${app_id}, containers left as-is" >&2
+      return 1
+    fi
+    podman-compose -f "$compose_file" up -d --force-recreate
   fi
-  podman-compose -f "$compose_file" up -d --force-recreate
 
   if app_containers_healthy "$app_id"; then
     echo "${app_id}: OK"
@@ -93,6 +114,7 @@ update_one() {
 }
 
 failures=()
+needs_review=()
 
 if [ "${#targets[@]}" -eq 0 ]; then
   mapfile -t targets < <(list_installed)
@@ -103,12 +125,15 @@ if [ "${#targets[@]}" -eq 0 ]; then
   echo "No installed apps to update (run \`make install\` first)."
 else
   for id in "${targets[@]}"; do
-    compose_file="apps/$id/docker-compose.yml"
+    compose_file=$(_compose_file_for "$id")
     if [ ! -f "$compose_file" ]; then
       echo "warn: $compose_file not found, skipping $id" >&2
       continue
     fi
-    if update_one "$id" "$compose_file"; then :; else
+    update_one "$id" && rc=0 || rc=$?
+    if [ "$rc" -eq 2 ]; then
+      needs_review+=("$id")
+    elif [ "$rc" -ne 0 ]; then
       failures+=("$id")
       [ "$stop_on_failure" -eq 1 ] && { echo "Stopping due to --stop-on-failure." >&2; exit 1; }
     fi
@@ -116,9 +141,10 @@ else
 fi
 
 echo
-if [ "${#failures[@]}" -eq 0 ]; then
+if [ "${#failures[@]}" -eq 0 ] && [ "${#needs_review[@]}" -eq 0 ]; then
   echo "Done - all updates succeeded."
 else
-  echo "Done - rolled back after failure: ${failures[*]}"
+  [ "${#needs_review[@]}" -gt 0 ] && echo "Needs review before restart (run ./apps/cli/scripts/review-external.sh <id>): ${needs_review[*]}"
+  [ "${#failures[@]}" -gt 0 ] && echo "Done - rolled back after failure: ${failures[*]}"
   exit 1
 fi

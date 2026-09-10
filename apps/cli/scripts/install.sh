@@ -7,12 +7,16 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 # shellcheck source=apps/cli/scripts/lib/common.sh
 source "apps/cli/scripts/lib/common.sh"
+# shellcheck source=apps/cli/scripts/lib/external.sh
+source "apps/cli/scripts/lib/external.sh"
 
 check_deps
 
-mapfile -t apps < <(list_available_apps | sort)
+mapfile -t first_party_apps < <(list_available_apps | sort)
+mapfile -t external_apps < <(list_external_apps | sort)
+apps=("${first_party_apps[@]}" "${external_apps[@]}")
 if [ "${#apps[@]}" -eq 0 ]; then
-  echo "No installable apps found under apps/ (each needs an install.sh)." >&2
+  echo "No installable apps found under apps/ (each needs an install.sh) or apps/external/ (see apps/external/README.md)." >&2
   exit 1
 fi
 
@@ -75,7 +79,13 @@ for id in "${selected[@]}"; do
   echo "=========================================="
   echo " Installing: $id"
   echo "=========================================="
-  if bash "apps/$id/install.sh"; then
+  if [[ "$id" == external/* ]]; then
+    if external_install "$id"; then
+      results+=("$id: OK")
+    else
+      results+=("$id: FAILED")
+    fi
+  elif bash "apps/$id/install.sh"; then
     results+=("$id: OK")
   else
     results+=("$id: FAILED")

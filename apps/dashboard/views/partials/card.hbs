@@ -2,10 +2,11 @@
    href="{{url}}" target="_blank" rel="noopener noreferrer" data-id="{{id}}">
   <div class="card-top">
     <span class="card-icon" data-icon="{{icon}}"></span>
+    {{#if external}}<span class="badge-external" title="{{#if source}}{{source}}{{else}}Third-party app{{/if}}">Third-party</span>{{/if}}
     <span class="status status-{{status}}" data-status-for="{{id}}">
       <span class="status-dot"></span>
       <span class="status-label">
-        {{#if isRunning}}Online{{else}}{{#if isNotInstalled}}Not installed{{else}}Offline{{/if}}{{/if}}
+        {{#if isRunning}}Online{{else}}{{#if isNotInstalled}}Not installed{{else}}{{#if isNeedsReview}}Needs review{{else}}Offline{{/if}}{{/if}}{{/if}}
       </span>
     </span>
   </div>
@@ -13,8 +14,14 @@
   <p>{{description}}</p>
   <div class="card-meta">{{host}}:{{port}}</div>
   <div class="card-actions">
-    {{#if isNotInstalled}}
-      <span class="hint">run <code>./apps/{{id}}/install.sh</code></span>
+    {{#if isNeedsReview}}
+      <span class="hint">run <code>./apps/cli/scripts/review-external.sh {{id}}</code></span>
+    {{else if isNotInstalled}}
+      {{#if external}}
+        <span class="hint">run <code>make install ARGS="{{id}}"</code></span>
+      {{else}}
+        <span class="hint">run <code>./apps/{{id}}/install.sh</code></span>
+      {{/if}}
     {{else}}
       <button type="button" class="action-btn start-btn" data-app-id="{{id}}" {{#if isRunning}}disabled{{/if}}>Start</button>
       <button type="button" class="action-btn stop-btn" data-app-id="{{id}}" {{#unless isRunning}}disabled{{/unless}}>Stop</button>

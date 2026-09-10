@@ -8,7 +8,8 @@
  * apps/dashboard itself are naturally excluded, no hardcoded skip-list
  * needed).
  *
- * Manifest schema (apps/<id>/manifest.json):
+ * Manifest schema (apps/<id>/manifest.json, or apps/external/<id>/manifest.json
+ * for third-party apps - see apps/external/README.md and docs/EXTERNAL_APPS.md):
  *   {
  *     "name": "Offline Maps",                 required
  *     "description": "One short sentence.",   required
@@ -16,7 +17,9 @@
  *     "icon": "map",                           required (see public/app.js ICONS)
  *     "protocol": "http",                      optional, default "http"
  *     "path": "/",                             optional, default "/"
- *     "port": { "envVar": "MAPS_WEB_PORT", "default": 3010 }   required
+ *     "port": { "envVar": "MAPS_WEB_PORT", "default": 3010 },   required
+ *     "type": "external",                      optional, third-party apps only
+ *     "source": "https://github.com/..."       optional, third-party apps only
  *   }
  *
  * There's no per-app "host" field - every app runs on the same device as
@@ -77,9 +80,15 @@ function validateManifest(manifest) {
   return null;
 }
 
-// Scans apps/<id>/manifest.json and returns { apps, errors }.
+// Scans apps/<id>/manifest.json (and apps/external/<id>/manifest.json,
+// for third-party apps the user manually cloned in - see
+// apps/external/README.md and docs/EXTERNAL_APPS.md) and returns
+// { apps, errors }.
 // apps: array of fully-resolved app entries (id, name, description,
-//       category, icon, protocol, path, port, url).
+//       category, icon, protocol, path, port, url, external).
+//       External apps get id "external/<dirname>" and external: true,
+//       so the rest of the dashboard/toolchain can tell them apart from
+//       first-party apps without a separate list.
 // errors: array of { id, reason } for present-but-invalid manifests
 //         (missing manifest.json is not an error - it's how non-dashboard
 //         directories like _template/cli/dashboard are excluded).
@@ -91,51 +100,64 @@ function scanApps(catasophieRoot = CATASOPHIE_ROOT, advertiseHost = "localhost")
   const apps = [];
   const errors = [];
 
-  let entries = [];
-  try {
-    entries = fs.readdirSync(appsDir, { withFileTypes: true });
-  } catch (err) {
-    return { apps, errors: [{ id: "apps/", reason: String(err.message || err) }] };
-  }
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const id = entry.name;
-    const appDir = path.join(appsDir, id);
-    const manifestPath = path.join(appDir, "manifest.json");
-    if (!fs.existsSync(manifestPath)) continue; // opt-in: no manifest, no dashboard entry
-
-    let manifest;
+  function scanDir(dir, idPrefix) {
+    let entries = [];
     try {
-      manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      entries = fs.readdirSync(dir, { withFileTypes: true });
     } catch (err) {
-      errors.push({ id, reason: `invalid JSON in manifest.json: ${err.message}` });
-      continue;
+      if (idPrefix === "") {
+        errors.push({ id: "apps/", reason: String(err.message || err) });
+      }
+      return;
     }
 
-    const validationError = validateManifest(manifest);
-    if (validationError) {
-      errors.push({ id, reason: validationError });
-      continue;
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const name = entry.name;
+      if (idPrefix === "" && name === "external") continue; // scanned separately below
+      const id = idPrefix + name;
+      const appDir = path.join(dir, name);
+      const manifestPath = path.join(appDir, "manifest.json");
+      if (!fs.existsSync(manifestPath)) continue; // opt-in: no manifest, no dashboard entry
+
+      let manifest;
+      try {
+        manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      } catch (err) {
+        errors.push({ id, reason: `invalid JSON in manifest.json: ${err.message}` });
+        continue;
+      }
+
+      const validationError = validateManifest(manifest);
+      if (validationError) {
+        errors.push({ id, reason: validationError });
+        continue;
+      }
+
+      const protocol = manifest.protocol || "http";
+      const appPath = manifest.path || "/";
+      const port = resolvePort(appDir, manifest.port);
+      const external = idPrefix !== "";
+
+      apps.push({
+        id,
+        name: manifest.name,
+        description: manifest.description,
+        category: manifest.category,
+        icon: manifest.icon,
+        protocol,
+        host: advertiseHost,
+        path: appPath,
+        port,
+        url: `${protocol}://${advertiseHost}:${port}${appPath}`,
+        external,
+        source: external ? manifest.source || null : undefined
+      });
     }
-
-    const protocol = manifest.protocol || "http";
-    const appPath = manifest.path || "/";
-    const port = resolvePort(appDir, manifest.port);
-
-    apps.push({
-      id,
-      name: manifest.name,
-      description: manifest.description,
-      category: manifest.category,
-      icon: manifest.icon,
-      protocol,
-      host: advertiseHost,
-      path: appPath,
-      port,
-      url: `${protocol}://${advertiseHost}:${port}${appPath}`
-    });
   }
+
+  scanDir(appsDir, "");
+  scanDir(path.join(appsDir, "external"), "external/");
 
   apps.sort((a, b) => a.name.localeCompare(b.name));
   return { apps, errors };
