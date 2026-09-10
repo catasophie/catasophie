@@ -78,7 +78,7 @@ if [ "$source" = "custom" ] && [ -z "$source_url" ]; then
 fi
 source_url="$(resolve_source_url "$source" "$region" "$source_url")"
 
-data_dir="${DATA_DIR:-${APP_DIR}/data}"
+data_dir="$(resolve_data_dir "$APP_DIR" "$ENV_FILE")"
 ensure_data_dir "$data_dir" || exit 1
 
 id="$(region_id "$region")"
@@ -91,7 +91,18 @@ if import_region_tiles "$data_dir" "$id" "$region" "$source_url"; then
   regenerate_tiles_config "$data_dir" "${APP_DIR}/templates/style.json.template"
   echo
   echo "'${region}' added (id: ${id})."
-  echo "Restart the tiles service to pick it up:"
-  echo "  podman-compose -f ${APP_DIR}/docker-compose.yml restart tiles"
-  echo "Then hard-refresh the web viewer - it re-fetches the region list on load."
+
+  # Restart tiles automatically (if it's actually running) so the new
+  # region is picked up without an easy-to-forget manual step - a
+  # container running with the stale, single-region config is exactly
+  # what makes a previously-imported region look like it "disappeared"
+  # (it's still on disk and in config.json, just not being served by
+  # the still-running old process yet).
+  if podman ps --format '{{.Names}}' 2>/dev/null | grep -qx 'offline-maps_tiles_1'; then
+    echo "Restarting tiles service to pick it up..."
+    podman-compose -f "${APP_DIR}/docker-compose.yml" restart tiles
+  else
+    echo "tiles isn't currently running - it'll pick up the new region whenever you next start it (./apps/offline-maps/up.sh)."
+  fi
+  echo "Hard-refresh the web viewer tab to see it in the region picker."
 fi

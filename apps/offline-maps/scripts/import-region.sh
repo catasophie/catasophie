@@ -91,7 +91,7 @@ case "${MAP_SOURCE:-geofabrik}" in
 esac
 
 : "${MAP_REGION:?MAP_REGION is required (see prompts above, or set it in ${ENV_FILE})}"
-data_dir="${DATA_DIR:-${APP_DIR}/data}"
+data_dir="$(resolve_data_dir "$APP_DIR" "$ENV_FILE")"
 ensure_data_dir "$data_dir" || exit 1
 
 id="$(region_id "$MAP_REGION")"

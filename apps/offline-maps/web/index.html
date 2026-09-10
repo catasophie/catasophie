@@ -56,12 +56,28 @@
     const cfg = window.MAPS_CONFIG || {};
     const picker = document.getElementById('region-picker');
     const insecureNotice = document.getElementById('insecure-notice');
+    const LAST_REGION_KEY = 'catasophie-offline-maps-last-region';
 
     let map;
 
     const loadStyle = async (styleId) => {
       const styleRequest = await fetch(`styles/${styleId}/style.json`);
       const style = await styleRequest.json();
+
+      // Remember whichever region is actually being viewed, so
+      // reloading the page (e.g. after importing another region with
+      // scripts/add-region.sh) comes back to the same one instead of
+      // always jumping to whatever now sorts first alphabetically -
+      // otherwise a previously-imported region can appear to have
+      // "disappeared" just because a newer region's name happens to
+      // sort earlier, even though it's still there (just not the
+      // default) and still selectable in the region picker.
+      try {
+        localStorage.setItem(LAST_REGION_KEY, styleId);
+      } catch {
+        // localStorage can throw in some contexts (e.g. private
+        // browsing with storage disabled) - not worth failing over.
+      }
 
       if (map) {
         map.setStyle(style);
@@ -144,7 +160,21 @@
       }
       picker.addEventListener('change', () => loadStyle(picker.value));
 
-      await loadStyle(styles[0].id);
+      // Default to whichever region was last viewed (see loadStyle),
+      // if it's still available, rather than always the alphabetically
+      // first one - see the comment in loadStyle for why.
+      let initialId = styles[0].id;
+      try {
+        const lastId = localStorage.getItem(LAST_REGION_KEY);
+        if (lastId && styles.some((s) => s.id === lastId)) {
+          initialId = lastId;
+        }
+      } catch {
+        // ignore - fall back to the default above
+      }
+      picker.value = initialId;
+
+      await loadStyle(initialId);
     };
 
     init();

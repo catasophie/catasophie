@@ -92,12 +92,16 @@ ADD_REGION_SOURCE=custom ADD_REGION_REGION=my-region \
   ./apps/offline-maps/scripts/add-region.sh
 ```
 
-After it finishes, restart the tiles service so it picks up the new
-region (no need to restart `web`), then hard-refresh the browser tab:
+After it finishes, it automatically restarts the `tiles` service (if
+running) so the new region is picked up immediately (no need to
+restart `web`) - just hard-refresh the browser tab so the region
+picker re-fetches the list. The previously-imported region(s) stay
+fully available - it's additive, not a replacement (see below).
 
-```sh
-podman-compose -f apps/offline-maps/docker-compose.yml restart tiles
-```
+Note: after a reload, the map defaults to whichever region you last
+viewed (remembered per-browser), not always the newest/alphabetically-
+first one - so a previously-imported region won't appear to have
+"disappeared" just because a new one now sorts earlier in the picker.
 
 Each region's tiles/style/config are (re)derived entirely from the
 `.mbtiles` files present under `data/tiles/` - there's no separate

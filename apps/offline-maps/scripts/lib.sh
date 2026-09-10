@@ -6,6 +6,32 @@
 #
 # Not meant to be run directly.
 
+# Resolves the data directory the same way docker-compose.yml's
+# "${DATA_DIR:-./data}" bind mounts do: the DATA_DIR env var if already
+# exported in the current shell, otherwise whatever's configured in
+# this app's .env (so e.g. running scripts/add-region.sh directly,
+# without going through install.sh first, still finds an
+# already-configured external-drive DATA_DIR instead of silently
+# falling back to ./data - that mismatch would make add-region.sh write
+# a new region into the wrong place while the tiles/web containers keep
+# reading the real, configured one, making previously-imported regions
+# look like they'd disappeared).
+# Usage: resolve_data_dir <app_dir> <env_file>
+resolve_data_dir() {
+  local app_dir="$1" env_file="$2"
+  if [ -n "${DATA_DIR:-}" ]; then
+    echo "$DATA_DIR"
+    return 0
+  fi
+  local configured
+  configured=$(grep -E '^DATA_DIR=' "$env_file" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
+  if [ -n "$configured" ]; then
+    echo "$configured"
+  else
+    echo "${app_dir}/data"
+  fi
+}
+
 # Turns a region path/name (e.g. "europe/germany", "North Rhine",
 # "us-west") into a safe, unique identifier usable as a filename stem,
 # a tileserver-gl data/style id, and inside a "mbtiles://{id}" style
