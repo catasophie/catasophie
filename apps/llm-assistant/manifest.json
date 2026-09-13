@@ -1,0 +1,12 @@
+{
+  "name": "LLM Assistant",
+  "description": "Offline AI chat assistant (Ollama + Open WebUI) for Q&A when you can't find the answer in a reference/ZIM - runs fully locally, no internet required.",
+  "category": "Reference",
+  "icon": "brain",
+  "protocol": "http",
+  "path": "/",
+  "port": {
+    "envVar": "LLM_ASSISTANT_PORT",
+    "default": 3050
+  }
+}

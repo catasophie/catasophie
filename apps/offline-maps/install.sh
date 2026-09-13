@@ -17,9 +17,10 @@ check_deps
 ensure_env_file "$APP_DIR"
 ENV_FILE="${APP_DIR}/.env"
 
+default_data_dir=$(resolve_default_data_dir offline-maps)
 prompt_if_unset DATA_DIR \
   "Directory for persistent data - tiles (blank = ./data here, or an absolute path e.g. an external drive mount)" \
-  "" "$ENV_FILE"
+  "$default_data_dir" "$ENV_FILE"
 
 prompt_if_unset MAPS_WEB_TLS_PORT \
   "Port to publish the map frontend on over HTTPS (default/primary - needed for the 'you are here' location marker to work when accessed via LAN IP - see README.md)" \

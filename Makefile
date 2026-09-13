@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 SCRIPTS := apps/cli/scripts
 
-.PHONY: help bootstrap install uninstall update backup restore add-app review-external hotspot-up hotspot-down
+.PHONY: help bootstrap install uninstall update backup restore add-app review-external hotspot-up hotspot-down set-storage
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | sort
@@ -26,6 +26,9 @@ restore: ## Restore an app from a backup: make restore ARGS="offline-maps"
 
 add-app: ## Scaffold a new app (prompts for app id + port): make add-app
 	./$(SCRIPTS)/add-app.sh
+
+set-storage: ## View/set/clear the global storage dir used as the default DATA_DIR base for all apps
+	./$(SCRIPTS)/set-storage.sh
 
 review-external: ## Review + approve a third-party app before install/update can run it: make review-external ARGS="my-tool"
 	./$(SCRIPTS)/review-external.sh $(ARGS)

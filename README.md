@@ -15,7 +15,7 @@ Currently implemented:
   (Kiwix), defaulting to a compact offline survival medicine guide, with
   an extensible catalog of additional ZIMs (emergency medicine, water
   safety, food preparation, knots, the full WikiMed medical
-  encyclopedia, ...).
+  encyclopedia, iFixit repair guides, Wikipedia, ...).
 - **`apps/translate`** - offline machine translation (LibreTranslate /
   Argos Translate), with a picker to select which languages to install
   and add more later.
@@ -26,14 +26,16 @@ Currently implemented:
   ATAK/WinTAK/iTAK: situational awareness (CoT), chat, and data package
   sharing over the LAN, with a generated connection package for
   devices.
+- **`apps/llm-assistant`** - offline AI chat assistant (Ollama + Open
+  WebUI), for Q&A beyond what the bundled reference content covers -
+  runs fully locally on CPU, no internet or GPU required.
 - **`apps/dashboard`** - status page for every app above, with buttons
   to start/stop each one - the one deliberate exception to the
   "no central dashboard" design (see `docs/ARCHITECTURE.md`), since it
   runs as a plain host process rather than a container.
 
-See `docs/ROADMAP.md` for other apps worth adding next (an offline LLM
-assistant, mesh comms, automated NOAA/SAME emergency-alert monitor,
-inventory tracker, ...).
+See `docs/ROADMAP.md` for other apps worth adding next (mesh comms,
+automated NOAA/SAME emergency-alert monitor, inventory tracker, ...).
 
 ## Quick start
 
@@ -110,6 +112,7 @@ app's own README for its full list of ports:
 - [`apps/translate/README.md`](apps/translate/README.md)
 - [`apps/sdr/README.md`](apps/sdr/README.md)
 - [`apps/tak-server/README.md`](apps/tak-server/README.md)
+- [`apps/llm-assistant/README.md`](apps/llm-assistant/README.md)
 - [`apps/dashboard/README.md`](apps/dashboard/README.md)
 
 Stop an app with `./apps/<app-id>/down.sh` (start it again with
@@ -184,6 +187,35 @@ drive isn't mounted). You can also set `DATA_DIR` by hand in
 `apps/<app-id>/.env` before running the installer. See
 `docs/ADDING_AN_APP.md` for the convention if you're adding a new app.
 
+### Setting one storage location for every app
+
+Instead of setting `DATA_DIR` separately in each app's `.env`, you can
+set a single global storage directory once and have every app default
+to a subfolder under it:
+
+```sh
+make set-storage
+```
+
+(also prompted once automatically by `make bootstrap`). This is stored
+as `GLOBAL_STORAGE_DIR` in a root-level `.env` (gitignored, like every
+app's own `.env`). For example, setting it to
+`/mnt/external/catasophie` makes `wikimed`'s installer default
+`DATA_DIR` to `/mnt/external/catasophie/wikimed`, `offline-maps`'s to
+`/mnt/external/catasophie/offline-maps`, and so on - so pointing this
+one setting at an external drive is enough to have every app store its
+data there.
+
+It's still just a *default*: each app's own installer prompt shows it
+pre-filled but lets you type a different path instead, and it has no
+effect on apps that are already installed - it only applies the next
+time an app is installed (or reinstalled after clearing its own
+`DATA_DIR`). Moving an already-installed app's existing data to a new
+location is a manual step: stop the app (`./apps/<id>/down.sh`), move
+its data directory, update `DATA_DIR` in `apps/<id>/.env`, then start
+it again (`./apps/<id>/up.sh`) - or use `make backup`/`make restore`
+(see `docs/BACKUP_RESTORE.md`).
+
 ## Troubleshooting
 
 **Podman machine disk full** (`no space left on device` while pulling
@@ -212,6 +244,7 @@ catasophie/
 │   ├── translate/          # offline machine translation (LibreTranslate)
 │   ├── sdr/                # web SDR receiver (OpenWebRX+) for an RTL-SDR dongle
 │   ├── tak-server/         # self-hosted TAK Server (FreeTAKServer) for ATAK/WinTAK/iTAK
+│   ├── llm-assistant/      # offline AI chat assistant (Ollama + Open WebUI)
 │   ├── dashboard/          # status + start/stop page for the apps above (host process, not a container - see docs/ARCHITECTURE.md)
 │   ├── _template/          # copy this (via `make add-app`) to scaffold a new app
 │   └── cli/                # shell scripts driving install/uninstall/update/backup/restore

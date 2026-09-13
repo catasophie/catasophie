@@ -19,6 +19,15 @@
 #     `podman unshare` isn't supported by the remote client at all.
 #     (podman-compose's short volume syntax doesn't support podman's own
 #     `:U` mount flag to do this automatically.)
+#   - TRANSLATE_CONTAINER_USER overrides the container's uid:gid, and is
+#     only ever set by install.sh/select-languages.sh themselves (not
+#     meant to be hand-edited) - it defaults to the image's own 1032:1032,
+#     but gets switched to 0:0 (root - safe under rootless podman, where
+#     container root maps to the invoking host user, not real root) when
+#     DATA_DIR is on a filesystem that can't be chowned at all (FAT32/
+#     exFAT/NTFS - common for external drives), since chown_data_dir has
+#     no way to grant the fixed 1032 uid access there. See
+#     dir_supports_chown in apps/cli/scripts/lib/common.sh.
 #   - LT_UPDATE_MODELS is intentionally NOT set here - it's only ever
 #     exported for one single `up -d` invocation by
 #     scripts/select-languages.sh when the language selection changes,
@@ -27,6 +36,7 @@
 services:
   translate:
     image: docker.io/libretranslate/libretranslate:latest
+    user: "${TRANSLATE_CONTAINER_USER:-1032:1032}"
     environment:
       - LT_LOAD_ONLY=${TRANSLATE_LANGS:-en,es}
       - LT_UPDATE_MODELS=${LT_UPDATE_MODELS:-}

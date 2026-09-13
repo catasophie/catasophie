@@ -212,5 +212,11 @@ echo "  podman:         $(command -v podman || echo 'not found')"
 echo "  podman-compose: $(command -v podman-compose || echo 'not found')"
 echo "  make:           $(command -v make || echo 'not found')"
 echo "  git:            $(command -v git || echo 'not found')"
+
+echo
+# shellcheck source=apps/cli/scripts/lib/common.sh
+source "apps/cli/scripts/lib/common.sh"
+configure_global_storage_dir
+
 echo
 echo "Next: make install"

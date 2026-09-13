@@ -26,14 +26,26 @@ at once. Pick from:
 | `zimgit-knots` | ~30M | Practical knots reference |
 | `wikem` | ~360M | [WikEM](https://www.wikem.org/) - global emergency medicine wiki |
 | `mdwiki` | ~2G | The full ["WikiMed" Medical Encyclopedia](https://mdwiki.org/) - comprehensive general medical reference |
+| `ifixit` | ~3.6G | [iFixit](https://www.ifixit.com/) repair guides - electronics, vehicles, appliances, and more |
+| `wikipedia-mini` | ~12.5G | Wikipedia (English), text-only summaries, no images |
+| `wikipedia-nopic` | ~53G | Wikipedia (English), full article text, no images |
+| `wikipedia-maxi` | ~127G | Wikipedia (English), full articles with images |
+
+The Wikipedia tiers are large - pick the smallest one that fits your
+storage budget; `wikipedia-mini` is a reasonable default for most
+setups. **Note**: WikiHow and Project Gutenberg are deliberately not in
+this catalog. WikiHow's ZIM was removed from Kiwix's distribution
+entirely (no working download exists to add). Project Gutenberg's
+full English ZIM is ~221G, impractical as a bundled default - if you
+want it, browse [download.kiwix.org/zim/gutenberg/](https://download.kiwix.org/zim/gutenberg/)
+for a smaller per-category split and add it via a `custom:<url>` entry
+below.
 
 You can also add one-off content not in the catalog via a `custom:<url>`
 entry (not offered in the checklist - set `WIKIMED_ZIMS` directly, see
 below) pointing at any `.zim` file - browse
 [library.kiwix.org](https://library.kiwix.org/) or
-[download.kiwix.org/zim/](https://download.kiwix.org/zim/) for more
-(other useful categories there: Wikipedia subsets, Wiktionary,
-WikiHow, Project Gutenberg, etc.).
+[download.kiwix.org/zim/](https://download.kiwix.org/zim/) for more.
 
 Or run the download script directly (e.g. to fetch ahead of time,
 before running the installer, or to add more content later) - either
@@ -81,9 +93,10 @@ drive) - see `install.sh`.
 
 - Filenames upstream on `download.kiwix.org` are dated and get replaced
   periodically. If a catalog download 404s, check
-  `https://download.kiwix.org/zim/other/` for the current filename and
-  either bump the URL in `scripts/download-zim.sh` or work around it
-  with a one-off `custom:<url>` entry in `WIKIMED_ZIMS`.
+  `https://download.kiwix.org/zim/` (the relevant subdirectory: `other/`,
+  `ifixit/`, `wikipedia/`) for the current filename and either bump the
+  URL in `scripts/download-zim.sh` or work around it with a one-off
+  `custom:<url>` entry in `WIKIMED_ZIMS`.
 - Each ZIM is downloaded once to a stable filename
   (`data/zims/<key>.zim`) - it won't auto-update to a newer dated
   upstream file. To refresh a given entry, delete its file under

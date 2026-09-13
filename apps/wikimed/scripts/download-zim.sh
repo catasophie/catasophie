@@ -42,12 +42,13 @@ check_deps
 ensure_env_file "$APP_DIR"
 ENV_FILE="${APP_DIR}/.env"
 
-# Known-good ZIMs from https://download.kiwix.org/zim/other/ as of
-# writing - dated filenames upstream can go stale (get replaced by a
-# newer date) over time. If a download 404s, check
-# https://download.kiwix.org/zim/other/ for the current filename and
-# either bump the URL below or use a custom:<url> entry in WIKIMED_ZIMS
-# to override without editing this script.
+# Known-good ZIMs from https://download.kiwix.org/zim/ (various
+# subdirectories - other/, ifixit/, wikipedia/) as of writing - dated
+# filenames upstream can go stale (get replaced by a newer date) over
+# time. If a download 404s, browse the relevant subdirectory under
+# https://download.kiwix.org/zim/ for the current filename and either
+# bump the URL below or use a custom:<url> entry in WIKIMED_ZIMS to
+# override without editing this script.
 declare -A CATALOG=(
   [zimgit-medicine]="https://download.kiwix.org/zim/other/zimgit-medicine_en_2024-08.zim"
   [zimgit-post-disaster]="https://download.kiwix.org/zim/other/zimgit-post-disaster_en_2024-05.zim"
@@ -56,6 +57,10 @@ declare -A CATALOG=(
   [zimgit-knots]="https://download.kiwix.org/zim/other/zimgit-knots_en_2024-08.zim"
   [wikem]="https://download.kiwix.org/zim/other/wikem_en_all_maxi_2026-07.zim"
   [mdwiki]="https://download.kiwix.org/zim/other/mdwiki_en_all_maxi_2025-11.zim"
+  [ifixit]="https://download.kiwix.org/zim/ifixit/ifixit_en_all_2025-12.zim"
+  [wikipedia-mini]="https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_mini_2026-06.zim"
+  [wikipedia-nopic]="https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_nopic_2026-06.zim"
+  [wikipedia-maxi]="https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_maxi_2026-08.zim"
 )
 
 catalog_keys() {

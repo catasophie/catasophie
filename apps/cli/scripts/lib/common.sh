@@ -441,11 +441,69 @@ ensure_data_dir() {
   mkdir -p "$dir"
 }
 
+# === Global storage directory ===
+#
+# Lets a user point ALL apps' data at one shared location (e.g. an
+# external drive) instead of setting DATA_DIR by hand in every single
+# app's .env. Backed by a root-level .env (gitignored, same as every
+# app's own .env), holding just GLOBAL_STORAGE_DIR. This is only ever
+# used to compute a *default* value offered to each app's own DATA_DIR
+# prompt - it's still fully overridable per-app, and changing it later
+# has no effect on apps that already have a DATA_DIR set (see
+# resolve_default_data_dir below and README.md's "Storing data on an
+# external drive" section).
+
+ROOT_ENV_FILE="${CATASOPHIE_ROOT}/.env"
+
+# Prompts for GLOBAL_STORAGE_DIR if unset (no-op if already set, same
+# semantics as prompt_if_unset). Meant to be called once, e.g. from
+# bootstrap.sh, so it's asked up front before installing any app -
+# but also safe to call from anywhere since it's idempotent.
+configure_global_storage_dir() {
+  ensure_env_file "$CATASOPHIE_ROOT"
+  prompt_if_unset GLOBAL_STORAGE_DIR \
+    "Global storage directory for ALL apps' data (blank = each app keeps using its own ./data folder; set to an absolute path - e.g. an external drive mount like /mnt/external/catasophie - to have every app default to a subfolder under it instead)" \
+    "" "$ROOT_ENV_FILE"
+}
+
+# Reads GLOBAL_STORAGE_DIR from the root .env (without prompting - safe
+# to call from any app's install.sh) and, if set, echoes
+# "<GLOBAL_STORAGE_DIR>/<app_id>" for use as that app's default DATA_DIR
+# value. Echoes nothing (empty) if GLOBAL_STORAGE_DIR is unset/blank,
+# preserving the original "./data next to the app" default.
+resolve_default_data_dir() {
+  local app_id="$1"
+  local configured=""
+  if [ -f "$ROOT_ENV_FILE" ]; then
+    configured=$(grep -E '^GLOBAL_STORAGE_DIR=' "$ROOT_ENV_FILE" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
+  fi
+  [ -n "$configured" ] && echo "${configured%/}/${app_id}"
+}
+
 # True when podman talks to a remote/VM service rather than running
 # containers natively on this host (always the case on macOS, where
 # podman is a client for a `podman machine` VM).
 podman_is_remote() {
   [ "$(podman info --format '{{.Host.ServiceIsRemote}}' 2>/dev/null)" = "true" ]
+}
+
+# True if the given directory's filesystem supports per-file POSIX
+# ownership (chown). False for FAT32/exFAT/NTFS - the common formats for
+# external/USB drives on Linux, which have no concept of a file owner:
+# udisks mounts them with a single fixed uid/gid for every file
+# (regardless of who created it) and any chown attempt fails with
+# "Operation not permitted", no matter which user/namespace runs it.
+# Used to detect when a data dir needs its container to just run as
+# root instead of being chowned to a fixed non-root image uid (root
+# inside a rootless podman container maps to the invoking host user,
+# not real root - see chown_data_dir/apps/translate for a real example).
+dir_supports_chown() {
+  local dir="$1" fstype
+  fstype=$(stat -f -c '%T' "$dir" 2>/dev/null || echo "")
+  case "$fstype" in
+    msdos | fat | vfat | exfat | ntfs | fuseblk | cifs | smb2 | smbfs) return 1 ;;
+    *) return 0 ;;
+  esac
 }
 
 # Gives a bind-mounted data dir to the fixed non-root uid some images run
@@ -461,10 +519,21 @@ podman_is_remote() {
 # layer between host and VM already presents bind mounts as owned by the
 # container's uid. Verified writable from inside the container without
 # any chown, so this is a no-op there.
+#
+# On a filesystem that doesn't support chown at all (see
+# dir_supports_chown - FAT32/exFAT/NTFS, common for external drives),
+# this fails loudly with a clear message instead of a raw "Operation not
+# permitted" - callers should check dir_supports_chown first and use an
+# alternative (e.g. running the container as root) when it returns
+# false, rather than calling this at all.
 chown_data_dir() {
   local dir="$1" owner="$2"
   if podman_is_remote; then
     return 0
+  fi
+  if ! dir_supports_chown "$dir"; then
+    echo "error: '${dir}' is on a filesystem without per-file ownership (FAT32/exFAT/NTFS?) - can't chown it to ${owner}." >&2
+    return 1
   fi
   podman unshare chown -R "$owner" "$dir"
 }

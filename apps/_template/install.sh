@@ -13,9 +13,10 @@ ENV_FILE="${APP_DIR}/.env"
 # Example - replace with your app's actual required configuration:
 # prompt_if_unset SOME_SETTING "Describe what this is for" "default-value" "$ENV_FILE"
 
+default_data_dir=$(resolve_default_data_dir __APP_ID__)
 prompt_if_unset DATA_DIR \
   "Directory for persistent data (blank = ./data here, or an absolute path e.g. an external drive mount)" \
-  "" "$ENV_FILE"
+  "$default_data_dir" "$ENV_FILE"
 
 prompt_if_unset __PORT_VAR__ \
   "Port to publish __APP_ID__ on (http://localhost:<port>/)" \

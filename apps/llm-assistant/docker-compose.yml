@@ -1,0 +1,49 @@
+# Offline LLM assistant: ollama serves/runs the model, open-webui gives
+# a browser-based chat UI on top of it. No GPU passthrough - runs on
+# CPU, which is enough for small models on modest hardware (Pi/mini-PC)
+# but will be slow for large ones. See README.md for model guidance.
+#
+# Persistent data goes under ${DATA_DIR:-./data} (gitignored), split into
+# a subfolder per service so `podman-compose down -v` + a fresh `up -d`
+# doesn't lose pulled models or chat history.
+
+services:
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    volumes:
+      - ${DATA_DIR:-./data}/ollama:/root/.ollama
+    restart: unless-stopped
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      # chromadb (open-webui's embedded vector store) telemetry - keep
+      # off for a fully offline/no-phone-home setup.
+      - ANONYMIZED_TELEMETRY=false
+      # IMPORTANT: without this, open-webui's default RAG embedding
+      # engine ('') tries to download a sentence-transformers model from
+      # huggingface.co on first startup - which hangs/fails with no
+      # internet and is exactly the kind of "phone home" this repo
+      # avoids. Routing embeddings through ollama instead (already
+      # running, already offline) avoids that download entirely. If you
+      # want document/knowledge-base RAG features, pull an
+      # embedding-capable model into ollama, e.g.:
+      #   podman-compose -f apps/llm-assistant/docker-compose.yml exec ollama ollama pull nomic-embed-text
+      # then set RAG_EMBEDDING_MODEL to it in .env (see .env.example).
+      - RAG_EMBEDDING_ENGINE=ollama
+      - RAG_EMBEDDING_MODEL=${LLM_ASSISTANT_EMBEDDING_MODEL:-nomic-embed-text}
+      # No accounts needed for a single-household/single-LAN device by
+      # default - set LLM_ASSISTANT_AUTH=true in .env if you want login
+      # (e.g. the device is reachable beyond a fully trusted LAN).
+      - WEBUI_AUTH=${LLM_ASSISTANT_AUTH:-false}
+      # Disable phone-home update checks - a fully offline app shouldn't
+      # ever try to reach openwebui's update-check endpoint.
+      - OFFLINE_MODE=true
+    volumes:
+      - ${DATA_DIR:-./data}/open-webui:/app/backend/data
+    ports:
+      - "${LLM_ASSISTANT_PORT:-3050}:8080"
+    depends_on:
+      - ollama
+    restart: unless-stopped

@@ -17,9 +17,10 @@ check_deps
 ensure_env_file "$APP_DIR"
 ENV_FILE="${APP_DIR}/.env"
 
+default_data_dir=$(resolve_default_data_dir translate)
 prompt_if_unset DATA_DIR \
   "Directory for persistent data - downloaded language models (blank = ./data here, or an absolute path e.g. an external drive mount)" \
-  "" "$ENV_FILE"
+  "$default_data_dir" "$ENV_FILE"
 
 prompt_if_unset TRANSLATE_PORT \
   "Port to publish translate on (http://localhost:<port>/)" \
@@ -34,7 +35,18 @@ ensure_data_dir "$data_dir" || exit 1
 # rootless-podman namespace mapping on Linux and is a no-op under remote
 # podman (macOS `podman machine`), where it's both unsupported and
 # unnecessary. Safe/idempotent to re-run.
-chown_data_dir "$data_dir" 1032:1032
+#
+# If DATA_DIR is on a filesystem that can't be chowned at all (FAT32/
+# exFAT/NTFS - common for external drives), fall back to running the
+# container as root instead (safe under rootless podman - see
+# TRANSLATE_CONTAINER_USER in docker-compose.yml).
+if podman_is_remote || dir_supports_chown "$data_dir"; then
+  chown_data_dir "$data_dir" 1032:1032
+  set_env_var TRANSLATE_CONTAINER_USER "1032:1032" "$ENV_FILE"
+else
+  echo "  note: ${data_dir} can't be chowned (FAT32/exFAT/NTFS?) - running translate as root instead (safe under rootless podman)."
+  set_env_var TRANSLATE_CONTAINER_USER "0:0" "$ENV_FILE"
+fi
 
 "$BASH" "${APP_DIR}/scripts/select-languages.sh"
 

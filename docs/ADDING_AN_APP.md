@@ -53,6 +53,19 @@ name from the id, e.g. `MY_TOOL_PORT` for `my-tool`).
   `make backup`/`make restore` - no extra config needed, as long as
   volume names follow the normal top-level `volumes:` convention (see
   `docs/BACKUP_RESTORE.md`).
+  - Default the `DATA_DIR` prompt from the global storage dir (see
+    `common.sh`'s `resolve_default_data_dir`, and `make set-storage`)
+    instead of a hardcoded blank/empty default, so users who've set one
+    global location (e.g. for an external drive) get it applied to
+    every app automatically:
+    ```sh
+    default_data_dir=$(resolve_default_data_dir __APP_ID__)
+    prompt_if_unset DATA_DIR \
+      "Directory for persistent data (blank = ./data here, or an absolute path e.g. an external drive mount)" \
+      "$default_data_dir" "$ENV_FILE"
+    ```
+    `apps/_template/install.sh` already does this - `make add-app`
+    scaffolds it automatically with the id substituted in.
 - **Multiple services calling each other**: if your app has a frontend
   that needs to call sibling backend services directly (since there's no
   proxy to unify them under one origin/path), have it learn their ports

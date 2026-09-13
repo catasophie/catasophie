@@ -113,7 +113,17 @@ new_csv=$(echo "$new_selection" | tr ' ' '\n' | sed '/^$/d' | sort -u | tr '\n' 
 
 data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1
-chown_data_dir "$data_dir" 1032:1032
+
+# See install.sh for the reasoning: chown the data dir to the image's
+# fixed uid, unless the filesystem can't support that (FAT32/exFAT/NTFS
+# - common for external drives), in which case run as root instead.
+if podman_is_remote || dir_supports_chown "$data_dir"; then
+  chown_data_dir "$data_dir" 1032:1032
+  set_env_var TRANSLATE_CONTAINER_USER "1032:1032" "$ENV_FILE"
+else
+  echo "  note: ${data_dir} can't be chowned (FAT32/exFAT/NTFS?) - running translate as root instead (safe under rootless podman)."
+  set_env_var TRANSLATE_CONTAINER_USER "0:0" "$ENV_FILE"
+fi
 
 if [ "$new_csv" = "$current_csv" ] && step_done translate "languages:${new_csv}"; then
   echo "No change - translate already serving: ${new_csv}"

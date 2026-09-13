@@ -6,11 +6,12 @@ order. None of these are scaffolded yet - use `make add-app` and
 
 ## Near-term
 
-- **Broader offline encyclopedia (Kiwix)** - `apps/wikimed` already
-  implements the Kiwix fetch/serve pattern (survival medicine ZIMs by
-  default, extensible catalog); this item is about adding more general
-  ZIMs on top - Wikipedia, Wiktionary, WikiHow, Project Gutenberg -
-  either by extending `apps/wikimed`'s catalog or as a separate app.
+- **More Kiwix catalog content in `apps/wikimed`** - Wiktionary and a
+  reasonably-sized Project Gutenberg split (the full English ZIM is
+  ~221G, impractical as a bundled default - see
+  `apps/wikimed/README.md`) are still worth adding. WikiHow is not
+  planned: Kiwix stopped distributing a WikiHow ZIM entirely, so there's
+  nothing to fetch.
 - **Inventory & rationing tracker** - food/water/fuel/medical supplies
   with expiry tracking and days-remaining-at-current-usage estimates.
   Simple CRUD app, high daily-use value even outside an actual emergency.

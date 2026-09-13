@@ -27,10 +27,14 @@ port(s).
 ```
 
 (Not every app is pictured above - see each app's own README for its
-full port list, e.g. `apps/sdr` and `apps/tak-server`. `apps/tak-server`
+full port list, e.g. `apps/sdr`, `apps/tak-server`, and
+`apps/llm-assistant`. `apps/tak-server`
 publishes `:19023` (admin UI), `:8087`/`:8089` (plain/TLS CoT - what
 ATAK/WinTAK/iTAK actually connect to), and `:8080`/`:8443` (plain/TLS
-data package transfer).)
+data package transfer). `apps/llm-assistant` publishes `:3050` (chat
+UI); its `ollama` model-runtime container isn't published to the host
+at all, only reachable from `open-webui` over the compose-internal
+network.)
 
 
 ## Request flow

@@ -17,9 +17,10 @@ check_deps
 ensure_env_file "$APP_DIR"
 ENV_FILE="${APP_DIR}/.env"
 
+default_data_dir=$(resolve_default_data_dir wikimed)
 prompt_if_unset DATA_DIR \
   "Directory for persistent data - ZIM files (blank = ./data here, or an absolute path e.g. an external drive mount)" \
-  "" "$ENV_FILE"
+  "$default_data_dir" "$ENV_FILE"
 
 prompt_if_unset WIKIMED_PORT \
   "Port to publish wikimed on (http://localhost:<port>/)" \
