@@ -36,7 +36,7 @@ name from the id, e.g. `MY_TOOL_PORT` for `my-tool`).
   existing apps' convention, e.g. `LLM_WEBUI_PORT`, `MAPS_TILES_PORT`):
   ```yaml
   ports:
-    - "${MY_TOOL_PORT:-8000}:8000"
+    - "${MY_TOOL_PORT:-12070}:8000"
   ```
   Pick a default port that doesn't collide with existing apps (see each
   app's `.env.example` for what's already taken). No labels, discovery,
@@ -87,36 +87,60 @@ name from the id, e.g. `MY_TOOL_PORT` for `my-tool`).
   `manifest.json` simply never shows up there (this is how
   `apps/_template`, `apps/cli`, and `apps/dashboard` itself stay off the
   dashboard without any special-casing). Schema:
-  ```json
-  {
-    "name": "Offline Maps",
-    "description": "One short sentence, shown on the dashboard card.",
-    "category": "Navigation",
-    "icon": "map",
-    "protocol": "http",
-    "path": "/",
-    "port": { "envVar": "MAPS_WEB_PORT", "default": 3010 }
-  }
-  ```
-  `name`, `description`, `category`, `icon`, and `port` (with both
-  `port.envVar` and `port.default`) are required; `protocol`/`path`
-  default to `"http"`/`"/"` if omitted. There's no per-app `host` field -
-  every app runs on the same device as the dashboard, so the host part of
-  each app's URL comes from a single dashboard-wide setting instead (see
-  `apps/dashboard/README.md`'s `DASHBOARD_ADVERTISE_HOST`), not something
-  each manifest repeats. `icon` must be one of the keys in
-  `apps/dashboard/public/app.js`'s `ICONS` map (falls back to `"server"`
-  if unknown). The dashboard reads the actual port live from the app's
-  own `.env` at scan time (via `port.envVar`), falling back to
-  `port.default` if `.env` or that var is missing (e.g. before the app is
-  installed) - the app's `.env` stays the single source of truth for its
-  port, the manifest never hardcodes a value that could drift from it. A
-  malformed manifest is skipped with a logged warning rather than
-  crashing the dashboard.
-  `apps/_template/manifest.json` has a placeholder to copy from - `make
-  add-app` scaffolds it automatically with the id/port substituted in,
-  same as the other template files (edit `description`/`category`/
-  `icon` by hand afterward).
+   ```json
+   {
+     "name": "Offline Maps",
+     "description": "One short sentence, shown on the dashboard card.",
+     "category": "Navigation",
+     "icon": "map",
+     "protocol": "http",
+     "path": "/",
+     "start": "./up.sh",
+     "stop": "./down.sh",
+     "port": { "envVar": "MAPS_WEB_PORT", "default": 12010 }
+   }
+   ```
+   `name`, `description`, `category`, `icon`, and `port` (with both
+   `port.envVar` and `port.default`) are required; `protocol`/`path`
+   default to `"http"`/`"/"` if omitted. There's no per-app `host` field -
+   every app runs on the same device as the dashboard, so the host part of
+   each app's URL comes from a single dashboard-wide setting instead (see
+   `apps/dashboard/README.md`'s `DASHBOARD_ADVERTISE_HOST`), not something
+   each manifest repeats. `icon` must be one of the keys in
+   `apps/dashboard/public/app.js`'s `ICONS` map (falls back to `"server"`
+   if unknown). The dashboard reads the actual port live from the app's
+   own `.env` at scan time (via `port.envVar`), falling back to
+   `port.default` if `.env` or that var is missing (e.g. before the app is
+   installed) - the app's `.env` stays the single source of truth for its
+   port, the manifest never hardcodes a value that could drift from it. A
+   malformed manifest is skipped with a logged warning rather than
+   crashing the dashboard.
+   `apps/_template/manifest.json` has a placeholder to copy from - `make
+   add-app` scaffolds it automatically with the id/port substituted in,
+   same as the other template files (edit `description`/`category`/
+   `icon` by hand afterward).
+
+   `"start"`/`"stop"` (optional, default `"./up.sh"`/`"./down.sh"`) are
+   the commands actually run when the dashboard's Start/Stop buttons are
+   clicked, or when `apps/cli/scripts/lib/external.sh`'s
+   `external_up`/`external_down` start/stop a third-party app - a plain
+   shell command string, run via `sh -c` with the app's own directory as
+   its working directory. Every first-party app in this repo declares
+   them explicitly (as `"./up.sh"`/`"./down.sh"`) for self-documentation
+   even though that's also the default - only actually override this if
+   an app genuinely needs a differently-named script or an inline
+   one-off command instead (e.g. a third-party app under
+   `apps/external/` that ships no `up.sh`/`down.sh` of its own can set
+   `"start"`/`"stop"` directly instead of adding wrapper scripts just to
+   satisfy this). If omitted and no `up.sh`/`down.sh` exists either, a
+   generic `podman-compose -f docker-compose.yml up -d`/`down` is used
+   as a last resort (first-party apps always have `up.sh`/`down.sh`, so
+   this only ever applies to external apps). For `apps/external/*` apps
+   specifically: since `manifest.json` now determines what command
+   actually runs, it's part of the reviewable files hashed by the review
+   gate (see "Reviewing external apps" in `docs/EXTERNAL_APPS.md`) -
+   editing it (including its `"start"`/`"stop"` fields) requires
+   re-review, same as editing `up.sh`/`down.sh` themselves would.
 - **.env.example**: if your app needs configuration, provide an
   `.env.example` in the app folder; `up.sh` copies it to `.env` on
   first start if missing.

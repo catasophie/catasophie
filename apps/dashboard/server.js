@@ -60,7 +60,7 @@ const ORIGINAL_ENV = { ...process.env };
 
 loadEnvFile(path.join(__dirname, ".env"));
 
-const PORT = Number(process.env.DASHBOARD_PORT || 8000);
+const PORT = Number(process.env.DASHBOARD_PORT || 12060);
 const HOST = process.env.DASHBOARD_HOST || "0.0.0.0";
 const SYSTEM_NAME = process.env.DASHBOARD_SYSTEM_NAME || "Resilience Hub";
 const LOCATION = process.env.DASHBOARD_LOCATION || "";
@@ -235,7 +235,7 @@ async function buildServer() {
       return reply.code(404).send({ ok: false, error: "unknown app" });
     }
     try {
-      await startApp(CATASOPHIE_ROOT, id);
+      await startApp(CATASOPHIE_ROOT, id, app.startCommand);
       const status = await statusesFor(CATASOPHIE_ROOT, [app]);
       return reply.send({ ok: true, status: status[id] });
     } catch (err) {
@@ -251,7 +251,7 @@ async function buildServer() {
       return reply.code(404).send({ ok: false, error: "unknown app" });
     }
     try {
-      await stopApp(CATASOPHIE_ROOT, id);
+      await stopApp(CATASOPHIE_ROOT, id, app.stopCommand);
       const status = await statusesFor(CATASOPHIE_ROOT, [app]);
       return reply.send({ ok: true, status: status[id] });
     } catch (err) {

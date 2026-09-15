@@ -5,8 +5,10 @@
   "icon": "book",
   "protocol": "http",
   "path": "/",
+  "start": "./up.sh",
+  "stop": "./down.sh",
   "port": {
     "envVar": "TRANSLATE_PORT",
-    "default": 3030
+    "default": 12030
   }
 }

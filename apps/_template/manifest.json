@@ -5,6 +5,8 @@
   "icon": "server",
   "protocol": "http",
   "path": "/",
+  "start": "./up.sh",
+  "stop": "./down.sh",
   "port": {
     "envVar": "__PORT_VAR__",
     "default": __PORT__

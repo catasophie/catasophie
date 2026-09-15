@@ -2,7 +2,7 @@
 // docker-entrypoint.d/20-envsubst-on-templates.sh renders this from
 // MAPS_WEB_TLS_PORT) so index.html's "switch to HTTPS" notice (see
 // its insecure-context check) links to the right port even if you've
-// customized it away from the 3010/3011 defaults in .env.
+// customized it away from the 12010/12011 defaults in .env.
 window.MAPS_CONFIG = {
   tlsPort: "${MAPS_WEB_TLS_PORT}"
 };

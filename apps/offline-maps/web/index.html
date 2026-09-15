@@ -47,7 +47,7 @@
     // transparently reverse-proxies tileserver-gl's own paths
     // (/styles*, /data/*, /fonts/*, /sprites/*, /health) through to the
     // "tiles" service, so this works unchanged whether loaded via
-    // http://localhost:3011/ or https://<device-ip>:3010/ - no separate
+    // http://localhost:12011/ or https://<device-ip>:12010/ - no separate
     // host:port to know about (unlike before - see git history), which
     // also avoids browsers blocking "mixed content" once this page is
     // loaded over HTTPS. config.js (rendered from MAPS_WEB_TLS_PORT at
@@ -120,7 +120,7 @@
       // with a link to the HTTPS port that does work (see
       // docker-compose.yml's MAPS_WEB_TLS_PORT / README.md).
       if (!window.isSecureContext) {
-        const tlsPort = cfg.tlsPort || '3010';
+        const tlsPort = cfg.tlsPort || '12010';
         const httpsUrl = `https://${location.hostname}:${tlsPort}${location.pathname}`;
         insecureNotice.innerHTML =
           'The location marker needs HTTPS when accessed via LAN IP (browser security requirement). ' +

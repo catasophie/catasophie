@@ -103,8 +103,8 @@ finish a step you skipped.
 
 Each app publishes its own port(s) directly - no shared entrypoint or
 landing page. After installing, each app's installer prints the URL to
-visit, e.g. `https://localhost:3010/` for `offline-maps`'s web UI, or
-`https://<device-ip>:3010/` from another device on the LAN. See each
+visit, e.g. `https://localhost:12010/` for `offline-maps`'s web UI, or
+`https://<device-ip>:12010/` from another device on the LAN. See each
 app's own README for its full list of ports:
 
 - [`apps/offline-maps/README.md`](apps/offline-maps/README.md)

@@ -33,7 +33,7 @@ ENV_FILE="${APP_DIR}/.env"
 
 prompt_if_unset TRANSLATE_PORT \
   "Port to publish translate on (http://localhost:<port>/)" \
-  "3030" "$ENV_FILE"
+  "12030" "$ENV_FILE"
 
 # A commonly-useful subset of LibreTranslate's supported languages -
 # not exhaustive. Add any other valid code by setting TRANSLATE_LANGS
@@ -140,7 +140,7 @@ if ! confirm "Download/update models for: ${new_csv}? (needs internet access now
 fi
 
 echo "Starting translate with model update enabled for: ${new_csv}..."
-port="${TRANSLATE_PORT:-3030}"
+port="${TRANSLATE_PORT:-12030}"
 LT_UPDATE_MODELS=true podman-compose -f "${APP_DIR}/docker-compose.yml" up -d --force-recreate
 
 echo "Waiting for models to finish downloading/loading (this can take several minutes)..."

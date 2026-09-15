@@ -24,7 +24,7 @@ prompt_if_unset DATA_DIR \
 
 prompt_if_unset TRANSLATE_PORT \
   "Port to publish translate on (http://localhost:<port>/)" \
-  "3030" "$ENV_FILE"
+  "12030" "$ENV_FILE"
 
 data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1
@@ -51,4 +51,4 @@ fi
 "$BASH" "${APP_DIR}/scripts/select-languages.sh"
 
 mark_installed translate
-echo "== translate installed. Visit http://localhost:${TRANSLATE_PORT:-3030}/ =="
+echo "== translate installed. Visit http://localhost:${TRANSLATE_PORT:-12030}/ =="

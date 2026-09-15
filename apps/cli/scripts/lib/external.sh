@@ -33,9 +33,14 @@ list_external_apps() {
 }
 
 # Files whose content matters for the review gate (whichever exist).
+# manifest.json is included since its "start"/"stop" fields (see
+# docs/ADDING_AN_APP.md) determine what external_up/external_down below
+# actually run - editing it must force re-review just like editing
+# up.sh/down.sh themselves would (kept in sync with apps/dashboard/lib/
+# status.js's REVIEW_FILES, the JS-side equivalent).
 _external_review_targets() {
   local app_dir="$1" f
-  for f in docker-compose.yml install.sh uninstall.sh up.sh down.sh .env.example; do
+  for f in manifest.json docker-compose.yml install.sh uninstall.sh up.sh down.sh .env.example; do
     [ -f "${app_dir}/${f}" ] && echo "${app_dir}/${f}"
   done
 }
@@ -121,23 +126,46 @@ review_external_app() {
 # === Generic up/down/install/uninstall for external apps that don't ===
 # === ship their own scripts. ===
 
+# Extracts a top-level string field's value from a manifest.json (e.g.
+# "start"/"stop" - see docs/ADDING_AN_APP.md), without needing jq for
+# something this simple. Echoes nothing if the file or field is
+# missing/not a plain string. Not a general JSON parser - only good
+# enough for flat "key": "value" fields like these.
+_manifest_string_field() {
+  local manifest_file="$1" key="$2"
+  [ -f "$manifest_file" ] || return 0
+  grep -E "\"${key}\"[[:space:]]*:" "$manifest_file" 2>/dev/null | head -n1 \
+    | sed -E "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\"([^\"]*)\".*/\1/"
+}
+
+# Runs an app's manifest-declared "start"/"stop" command (see
+# resolve_app_command below), falling back to its own up.sh/down.sh if
+# executable, else a generic podman-compose invocation - same
+# resolution order as apps/dashboard/lib/registry.js's resolveCommand,
+# kept in sync by hand (one side bash, the other JS).
+# Usage: _run_app_command <app_dir> <manifest_key> <script_name> <compose_args...>
+_run_app_command() {
+  local app_dir="$1" manifest_key="$2" script_name="$3"
+  shift 3
+  local cmd; cmd=$(_manifest_string_field "${app_dir}/manifest.json" "$manifest_key")
+  if [ -n "$cmd" ]; then
+    ( cd "$app_dir" && eval "$cmd" )
+  elif [ -x "${app_dir}/${script_name}" ]; then
+    ( cd "$app_dir" && "./${script_name}" )
+  else
+    podman-compose -f "${app_dir}/docker-compose.yml" "$@"
+  fi
+}
+
 external_up() {
   local app_id="$1" app_dir; app_dir=$(_app_dir_for "$app_id")
-  if [ -x "${app_dir}/up.sh" ]; then
-    ( cd "$app_dir" && ./up.sh )
-  else
-    ensure_env_file "$app_dir"
-    podman-compose -f "${app_dir}/docker-compose.yml" up -d
-  fi
+  ensure_env_file "$app_dir"
+  _run_app_command "$app_dir" "start" "up.sh" up -d
 }
 
 external_down() {
   local app_id="$1" app_dir; app_dir=$(_app_dir_for "$app_id")
-  if [ -x "${app_dir}/down.sh" ]; then
-    ( cd "$app_dir" && ./down.sh )
-  else
-    podman-compose -f "${app_dir}/docker-compose.yml" down
-  fi
+  _run_app_command "$app_dir" "stop" "down.sh" down
 }
 
 # Warns (doesn't block) if the port this app's manifest declares looks

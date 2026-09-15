@@ -32,7 +32,7 @@ ENV_FILE="${APP_DIR}/.env"
 
 prompt_if_unset DASHBOARD_PORT \
   "Port to publish the dashboard on (http://localhost:<port>/)" \
-  "8000" "$ENV_FILE"
+  "12060" "$ENV_FILE"
 
 echo "Installing dashboard dependencies (npm install)..."
 (cd "$APP_DIR" && npm install --no-audit --no-fund)
@@ -54,4 +54,4 @@ else
 fi
 
 mark_installed dashboard
-echo "== dashboard installed. Visit http://localhost:${DASHBOARD_PORT:-8000}/ =="
+echo "== dashboard installed. Visit http://localhost:${DASHBOARD_PORT:-12060}/ =="

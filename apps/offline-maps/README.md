@@ -10,15 +10,15 @@ history if you want to bring them back.
 - **tiles** - [tileserver-gl](https://github.com/maptiler/tileserver-gl)
   serving a pre-built vector tileset per imported region (see "Adding
   more regions later" below) - published on
-  `http://localhost:${MAPS_TILES_PORT:-3012}/`
+  `http://localhost:${MAPS_TILES_PORT:-12012}/`
 - **web** - a minimal static [MapLibre GL](https://maplibre.org/) page
   (region picker + a "you are here" location dot/heading, via
   MapLibre's `GeolocateControl`) - published on both:
-  - `https://localhost:${MAPS_WEB_TLS_PORT:-3010}/` (default/primary -
+  - `https://localhost:${MAPS_WEB_TLS_PORT:-12010}/` (default/primary -
     self-signed cert - see "Location marker / HTTPS" below for why
     this exists and is needed for the location marker when accessed
     via LAN IP)
-  - `http://localhost:${MAPS_WEB_PORT:-3011}/` (plain HTTP fallback -
+  - `http://localhost:${MAPS_WEB_PORT:-12011}/` (plain HTTP fallback -
     location marker won't work over this one unless accessed as
     localhost)
 
@@ -117,11 +117,11 @@ regenerate `config.json`.
 podman-compose -f apps/offline-maps/docker-compose.yml up -d
 ```
 
-Visit `https://localhost:3010/` (or whatever you set `MAPS_WEB_TLS_PORT`
-to - also reachable at `https://<device-ip>:3010/` from another device
+Visit `https://localhost:12010/` (or whatever you set `MAPS_WEB_TLS_PORT`
+to - also reachable at `https://<device-ip>:12010/` from another device
 on the LAN, after clicking through the one-time self-signed cert
 warning - see "Location marker / HTTPS" below). A plain-HTTP fallback
-is also published at `http://localhost:3011/` (`MAPS_WEB_PORT`).
+is also published at `http://localhost:12011/` (`MAPS_WEB_PORT`).
 
 ## Location marker / HTTPS
 
@@ -129,19 +129,19 @@ The "you are here" marker (top-right button on the map, via MapLibre's
 `GeolocateControl`) uses the browser's Geolocation API, which browsers
 only expose on a *secure context*: `https://` origins, or specifically
 `http://localhost` (the *only* plain-HTTP exception). This is why
-HTTPS (`MAPS_WEB_TLS_PORT`, default `3010`) is the default/primary port
+HTTPS (`MAPS_WEB_TLS_PORT`, default `12010`) is the default/primary port
 for this app:
 
-- Opening the map at `https://localhost:3010/` **or**
-  `http://localhost:3011/` **on the device itself**: the button works
+- Opening the map at `https://localhost:12010/` **or**
+  `http://localhost:12011/` **on the device itself**: the button works
   either way (both are secure contexts for "localhost").
 - Opening it from **another device on the LAN**: only
-  `https://<device-ip>:3010/` works for the button -
-  `http://<device-ip>:3011/` will have it silently do nothing (browser
+  `https://<device-ip>:12010/` works for the button -
+  `http://<device-ip>:12011/` will have it silently do nothing (browser
   blocking it, not a bug). The page detects this and shows a banner
   with the right link if you land on the insecure one.
 
-`https://<device-ip>:3010/` uses a self-signed certificate generated
+`https://<device-ip>:12010/` uses a self-signed certificate generated
 locally by `scripts/ensure-tls-cert.sh` (called automatically by
 `install.sh`/`up.sh` - there's no public DNS name to get a real,
 CA-trusted cert for on a LAN-only device). Your browser will show a
@@ -167,10 +167,10 @@ already-registered per-region style, as plain **raster PNG** XYZ tiles -
 no extra config needed. The style id is the region's sanitized id (see
 `region_id()` in `scripts/lib.sh` - e.g. `MAP_REGION=europe/germany`
 becomes `germany`); list all currently-registered ids/names at
-`http://<device-ip>:${MAPS_TILES_PORT:-3012}/styles.json`:
+`http://<device-ip>:${MAPS_TILES_PORT:-12012}/styles.json`:
 
 ```
-http://<device-ip>:${MAPS_TILES_PORT:-3012}/styles/<region-id>/{z}/{x}/{y}.png
+http://<device-ip>:${MAPS_TILES_PORT:-12012}/styles/<region-id>/{z}/{x}/{y}.png
 ```
 
 In ATAK, add this as a custom tile source (menu → Settings → Tool

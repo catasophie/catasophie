@@ -24,7 +24,7 @@ prompt_if_unset DATA_DIR \
 
 prompt_if_unset WIKIMED_PORT \
   "Port to publish wikimed on (http://localhost:<port>/)" \
-  "3020" "$ENV_FILE"
+  "12040" "$ENV_FILE"
 
 data_dir="${DATA_DIR:-${APP_DIR}/data}"
 ensure_data_dir "$data_dir" || exit 1
@@ -36,4 +36,4 @@ echo "Starting wikimed..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d
 
 mark_installed wikimed
-echo "== wikimed installed. Visit http://localhost:${WIKIMED_PORT:-3020}/ =="
+echo "== wikimed installed. Visit http://localhost:${WIKIMED_PORT:-12040}/ =="

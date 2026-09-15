@@ -43,7 +43,7 @@ services:
     volumes:
       - ${DATA_DIR:-./data}:/home/libretranslate/.local
     ports:
-      - "${TRANSLATE_PORT:-3030}:5000"
+      - "${TRANSLATE_PORT:-12030}:5000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "./venv/bin/python scripts/healthcheck.py"]

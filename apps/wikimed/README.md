@@ -79,8 +79,8 @@ to take a while. The default (`zimgit-medicine`) is small and fast.
 podman-compose -f apps/wikimed/docker-compose.yml up -d
 ```
 
-Then visit `http://localhost:3020/` (or whatever you set
-`WIKIMED_PORT` to - also reachable at `http://<device-ip>:3020/`
+Then visit `http://localhost:12040/` (or whatever you set
+`WIKIMED_PORT` to - also reachable at `http://<device-ip>:12040/`
 from another device on the LAN).
 
 ## Data

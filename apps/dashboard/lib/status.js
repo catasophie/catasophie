@@ -11,9 +11,15 @@
  * than an HTTP reachability check (which can't tell "still starting up"
  * from "not installed" from "crashed").
  *
- * Start/stop simply invoke the app's own up.sh/down.sh - the dashboard
- * never calls podman-compose directly, so every app's own idempotent
- * install contract (ensure_env_file, etc.) still applies unchanged.
+ * Start/stop run whatever command apps/<id>/manifest.json declares via
+ * its "start"/"stop" fields (see lib/registry.js's resolveCommand -
+ * default "./up.sh"/"./down.sh", falling back further to a generic
+ * podman-compose invocation for apps that ship neither) - not a
+ * hardcoded "up.sh"/"down.sh" literal, so each app's manifest is free to
+ * point at a differently-named script, or even an inline command. The
+ * command is run via `sh -c` with cwd = the app's own directory - the
+ * dashboard itself never assumes anything about *how* an app starts,
+ * only that its manifest says how to.
  */
 
 const fs = require("node:fs");
@@ -51,8 +57,11 @@ function projectNameFor(appId) {
 // since one side is bash and the other Node. Used only to tell the
 // dashboard whether an external app is safe to start (it never performs
 // the review itself - that's a CLI-only step, see
-// apps/cli/scripts/review-external.sh).
-const REVIEW_FILES = ["docker-compose.yml", "install.sh", "uninstall.sh", "up.sh", "down.sh", ".env.example"];
+// apps/cli/scripts/review-external.sh). manifest.json is included since
+// its "start"/"stop" fields (and everything else about it) determine
+// what actually runs - editing it must force re-review just like
+// editing up.sh/down.sh themselves would.
+const REVIEW_FILES = ["manifest.json", "docker-compose.yml", "install.sh", "uninstall.sh", "up.sh", "down.sh", ".env.example"];
 
 function externalReviewHash(appDir) {
   const hashes = REVIEW_FILES
@@ -126,60 +135,42 @@ async function statusesFor(catasophieRoot, apps) {
   return Object.fromEntries(entries);
 }
 
-// Runs apps/<id>/up.sh or down.sh (or, for external apps that don't ship
-// their own, drives podman-compose directly against their compose file -
-// see apps/cli/scripts/lib/external.sh's external_up/external_down,
-// mirrored here). Resolved relative to catasophieRoot. Rejects if the
-// app isn't installed/reviewed or nothing runnable is found, so callers
-// never need to shell-interpolate an arbitrary id.
-async function runAppScript(catasophieRoot, appId, script) {
-  if (!["up.sh", "down.sh"].includes(script)) {
-    throw new Error(`refusing to run unexpected script: ${script}`);
+// Runs the given app's manifest-declared start/stop command (see
+// lib/registry.js's resolveCommand for how "command" is resolved from
+// manifest.json, with sensible fallbacks) via `sh -c`, cwd = the app's
+// own directory. Rejects if the app needs review first, so callers
+// never need to shell-interpolate an arbitrary id themselves - only the
+// already-resolved command string (from the trusted registry scan, or
+// an explicit review-gated caller) ever reaches the shell.
+// Usage: runAppCommand(catasophieRoot, appId, "start", app.startCommand)
+async function runAppCommand(catasophieRoot, appId, kind, command) {
+  if (!["start", "stop"].includes(kind)) {
+    throw new Error(`refusing to run unexpected command kind: ${kind}`);
+  }
+  if (!command || typeof command !== "string") {
+    throw new Error(`no ${kind} command configured for app "${appId}"`);
   }
   const appDir = appDirFor(catasophieRoot, appId);
 
-  if (isExternal(appId) && script === "up.sh" && !isExternalReviewed(appDir)) {
+  if (isExternal(appId) && kind === "start" && !isExternalReviewed(appDir)) {
     throw new Error(
       `"${appId}" needs review before it can be started - run: ./apps/cli/scripts/review-external.sh ${appId.slice("external/".length)}`
     );
   }
 
-  const scriptPath = path.join(appDir, script);
-  if (fs.existsSync(scriptPath)) {
-    const { stdout, stderr } = await execFileAsync("bash", [scriptPath], {
-      cwd: appDir,
-      timeout: 5 * 60 * 1000
-    });
-    return { stdout, stderr };
-  }
-
-  if (!isExternal(appId)) {
-    throw new Error(`${script} not found for app "${appId}" - is it installed?`);
-  }
-
-  // External app with no up.sh/down.sh of its own - drive podman-compose
-  // directly, same generic fallback as external_up/external_down.
-  const composeFile = path.join(appDir, "docker-compose.yml");
-  if (!fs.existsSync(composeFile)) {
-    throw new Error(`no docker-compose.yml found for "${appId}"`);
-  }
-  const args =
-    script === "up.sh"
-      ? ["-f", composeFile, "up", "-d"]
-      : ["-f", composeFile, "down"];
-  const { stdout, stderr } = await execFileAsync("podman-compose", args, {
+  const { stdout, stderr } = await execFileAsync("/bin/sh", ["-c", command], {
     cwd: appDir,
     timeout: 5 * 60 * 1000
   });
   return { stdout, stderr };
 }
 
-async function startApp(catasophieRoot, appId) {
-  return runAppScript(catasophieRoot, appId, "up.sh");
+async function startApp(catasophieRoot, appId, command = "./up.sh") {
+  return runAppCommand(catasophieRoot, appId, "start", command);
 }
 
-async function stopApp(catasophieRoot, appId) {
-  return runAppScript(catasophieRoot, appId, "down.sh");
+async function stopApp(catasophieRoot, appId, command = "./down.sh") {
+  return runAppCommand(catasophieRoot, appId, "stop", command);
 }
 
 module.exports = {

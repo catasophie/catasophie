@@ -17,7 +17,9 @@
  *     "icon": "map",                           required (see public/app.js ICONS)
  *     "protocol": "http",                      optional, default "http"
  *     "path": "/",                             optional, default "/"
- *     "port": { "envVar": "MAPS_WEB_PORT", "default": 3010 },   required
+ *     "start": "./up.sh",                      optional, default "./up.sh"
+ *     "stop": "./down.sh",                     optional, default "./down.sh"
+ *     "port": { "envVar": "MAPS_WEB_PORT", "default": 12010 },   required
  *     "type": "external",                      optional, third-party apps only
  *     "source": "https://github.com/..."       optional, third-party apps only
  *   }
@@ -33,6 +35,15 @@
  * its port, matching how every other tool in this repo resolves it.
  * Scanning happens once at dashboard startup and whenever the "Rescan"
  * button (or POST /api/rescan) is used - not on every request/poll.
+ *
+ * "start"/"stop" are the commands the dashboard's Start/Stop buttons
+ * (and apps/cli/scripts/lib/external.sh's external_up/external_down,
+ * for third-party apps) actually run - resolved here from the manifest
+ * (default "./up.sh"/"./down.sh" if omitted) and run via `sh -c` with
+ * cwd = the app's own directory (see lib/status.js). This lets an app
+ * with unusual startup needs (a differently-named script, or an inline
+ * command) override it without the dashboard/CLI needing to special-case
+ * it - see docs/ADDING_AN_APP.md.
  */
 
 const fs = require("node:fs");
@@ -64,6 +75,18 @@ function resolvePort(appDir, portSpec) {
     return Number(fromEnv);
   }
   return portSpec.default;
+}
+
+// Resolves the actual start/stop command for an app: the manifest's
+// "start"/"stop" value if set, else "./<scriptName>" if that script
+// exists in the app's own directory (the common case - every
+// first-party app ships up.sh/down.sh), else a generic podman-compose
+// fallback (for third-party apps that ship neither - mirrors
+// apps/cli/scripts/lib/external.sh's external_up/external_down).
+function resolveCommand(appDir, manifestValue, scriptName, composeArgs) {
+  if (manifestValue) return manifestValue;
+  if (fs.existsSync(path.join(appDir, scriptName))) return `./${scriptName}`;
+  return `podman-compose -f docker-compose.yml ${composeArgs}`;
 }
 
 function validateManifest(manifest) {
@@ -138,6 +161,10 @@ function scanApps(catasophieRoot = CATASOPHIE_ROOT, advertiseHost = "localhost")
       const appPath = manifest.path || "/";
       const port = resolvePort(appDir, manifest.port);
       const external = idPrefix !== "";
+      const startCommand = resolveCommand(appDir, manifest.start, "up.sh", "up -d");
+      const stopCommand = resolveCommand(appDir, manifest.stop, "down.sh", "down");
+
+      const url = `${protocol}://${advertiseHost}:${port}${appPath}`;
 
       apps.push({
         id,
@@ -149,7 +176,9 @@ function scanApps(catasophieRoot = CATASOPHIE_ROOT, advertiseHost = "localhost")
         host: advertiseHost,
         path: appPath,
         port,
-        url: `${protocol}://${advertiseHost}:${port}${appPath}`,
+        startCommand,
+        stopCommand,
+        url,
         external,
         source: external ? manifest.source || null : undefined
       });

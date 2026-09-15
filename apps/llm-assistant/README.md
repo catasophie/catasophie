@@ -50,8 +50,8 @@ podman-compose -f apps/llm-assistant/docker-compose.yml exec ollama ollama pull 
 podman-compose -f apps/llm-assistant/docker-compose.yml up -d
 ```
 
-Then visit `http://localhost:3050/` (or whatever you set
-`LLM_ASSISTANT_PORT` to - also reachable at `http://<device-ip>:3050/`
+Then visit `http://localhost:12020/` (or whatever you set
+`LLM_ASSISTANT_PORT` to - also reachable at `http://<device-ip>:12020/`
 from another device on the LAN). No login is required by default
 (`LLM_ASSISTANT_AUTH=false`) - set it to `true` in `.env` if this
 device is reachable beyond a fully trusted LAN.

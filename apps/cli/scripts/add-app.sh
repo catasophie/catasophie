@@ -28,7 +28,7 @@ dest="apps/$id"
 
 port=""
 while true; do
-  read -r -p "Default port to publish $id on (e.g. 3020): " port
+  read -r -p "Default port to publish $id on (e.g. 12040): " port
   if [[ "$port" =~ ^[0-9]+$ ]]; then
     break
   fi

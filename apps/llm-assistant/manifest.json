@@ -5,8 +5,11 @@
   "icon": "brain",
   "protocol": "http",
   "path": "/",
+  "start": "./up.sh",
+  "stop": "./down.sh",
+  "subdomain": "llm",
   "port": {
     "envVar": "LLM_ASSISTANT_PORT",
-    "default": 3050
+    "default": 12020
   }
 }

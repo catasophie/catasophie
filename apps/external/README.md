@@ -20,7 +20,7 @@ git clone <third-party-repo-url> apps/external/<id>
 Requirements for `apps/external/<id>/` to be recognized:
 
 - `docker-compose.yml` - must publish its port(s) via an env var with a
-  default, e.g. `${MY_TOOL_PORT:-8000}:8000` (same convention as
+  default, e.g. `${MY_TOOL_PORT:-12070}:8000` (same convention as
   first-party apps - lets the port be checked for collisions and
   reconfigured via `.env`).
 - `manifest.json` - same schema as `docs/ADDING_AN_APP.md`, plus

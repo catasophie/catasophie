@@ -5,8 +5,10 @@
   "icon": "medkit",
   "protocol": "http",
   "path": "/",
+  "start": "./up.sh",
+  "stop": "./down.sh",
   "port": {
     "envVar": "WIKIMED_PORT",
-    "default": 3020
+    "default": 12040
   }
 }

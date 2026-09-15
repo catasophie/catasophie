@@ -40,9 +40,9 @@ no internet needed at runtime, only when adding new languages.
 ./apps/translate/up.sh
 ```
 
-Then visit `http://localhost:3030/` (or whatever you set
+Then visit `http://localhost:12030/` (or whatever you set
 `TRANSLATE_PORT` to in `.env` - also reachable at
-`http://<device-ip>:3030/` from another device on the LAN).
+`http://<device-ip>:12030/` from another device on the LAN).
 
 Stop with `./apps/translate/down.sh`.
 

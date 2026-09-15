@@ -1,7 +1,7 @@
 # Offline encyclopedia / reference content via Kiwix (kiwix-serve),
 # serving whatever ZIM file(s) scripts/download-zim.sh fetched into
 # ${DATA_DIR:-./data}/zims/ - published on
-# http://localhost:${WIKIMED_PORT:-3020}/
+# http://localhost:${WIKIMED_PORT:-12040}/
 #
 # Run scripts/download-zim.sh once (see install.sh, or run it directly)
 # before starting this service - it expects at least one .zim file
@@ -22,5 +22,5 @@ services:
     volumes:
       - ${DATA_DIR:-./data}/zims:/data
     ports:
-      - "${WIKIMED_PORT:-3020}:8080"
+      - "${WIKIMED_PORT:-12040}:8080"
     restart: unless-stopped

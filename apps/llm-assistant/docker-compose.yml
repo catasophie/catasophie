@@ -43,7 +43,7 @@ services:
     volumes:
       - ${DATA_DIR:-./data}/open-webui:/app/backend/data
     ports:
-      - "${LLM_ASSISTANT_PORT:-3050}:8080"
+      - "${LLM_ASSISTANT_PORT:-12020}:8080"
     depends_on:
       - ollama
     restart: unless-stopped

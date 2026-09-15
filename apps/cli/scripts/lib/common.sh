@@ -477,7 +477,10 @@ resolve_default_data_dir() {
   if [ -f "$ROOT_ENV_FILE" ]; then
     configured=$(grep -E '^GLOBAL_STORAGE_DIR=' "$ROOT_ENV_FILE" 2>/dev/null | tail -n1 | cut -d'=' -f2-)
   fi
-  [ -n "$configured" ] && echo "${configured%/}/${app_id}"
+  if [ -n "$configured" ]; then
+    echo "${configured%/}/${app_id}"
+  fi
+  return 0
 }
 
 # True when podman talks to a remote/VM service rather than running

@@ -39,7 +39,7 @@ sleep 1
 if kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
   # shellcheck disable=SC1091
   source "${APP_DIR}/.env" 2>/dev/null || true
-  echo "Dashboard started (pid $(cat "$PID_FILE")). Visit http://localhost:${DASHBOARD_PORT:-8000}/"
+  echo "Dashboard started (pid $(cat "$PID_FILE")). Visit http://localhost:${DASHBOARD_PORT:-12060}/"
   echo "Logs: ${LOG_FILE}"
 else
   echo "error: dashboard failed to start - check ${LOG_FILE}" >&2

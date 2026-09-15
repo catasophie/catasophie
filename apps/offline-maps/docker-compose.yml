@@ -5,20 +5,20 @@
 #   - tiles:      tileserver-gl serving a pre-built .mbtiles per imported
 #                 region (one style/data source each - see
 #                 scripts/lib.sh) - published directly on
-#                 http://localhost:${MAPS_TILES_PORT:-3012}/ (e.g. for
+#                 http://localhost:${MAPS_TILES_PORT:-12012}/ (e.g. for
 #                 ATAK raster tiles - see README.md), and also reachable
 #                 from "web" on this app's own private network as
 #                 "tiles:8080" (see web's nginx config).
 #   - web:        static MapLibre GL frontend (region picker + "you are
 #                 here" location marker), published on both:
-#                   - https://localhost:${MAPS_WEB_TLS_PORT:-3010}/
+#                   - https://localhost:${MAPS_WEB_TLS_PORT:-12010}/
 #                     (default/primary - self-signed cert from
 #                     scripts/ensure-tls-cert.sh, browsers will warn
 #                     once, click through) - the Geolocation API (for
 #                     the location marker) only works over a secure
 #                     context when accessed via a LAN IP rather than
 #                     localhost, hence HTTPS being the default here.
-#                   - http://localhost:${MAPS_WEB_PORT:-3011}/ (plain
+#                   - http://localhost:${MAPS_WEB_PORT:-12011}/ (plain
 #                     HTTP, e.g. for clients that can't handle a
 #                     self-signed cert - the location marker won't work
 #                     over this one unless accessed as localhost)
@@ -49,7 +49,7 @@ services:
     volumes:
       - ${DATA_DIR:-./data}/tiles:/data
     ports:
-      - "${MAPS_TILES_PORT:-3012}:8080"
+      - "${MAPS_TILES_PORT:-12012}:8080"
     restart: unless-stopped
 
   web:
@@ -63,7 +63,7 @@ services:
       # how the frontend talks to tiles (same-origin proxy, see
       # templates/nginx.conf).
       - NGINX_ENVSUBST_OUTPUT_DIR=/usr/share/nginx/html
-      - MAPS_WEB_TLS_PORT=${MAPS_WEB_TLS_PORT:-3010}
+      - MAPS_WEB_TLS_PORT=${MAPS_WEB_TLS_PORT:-12010}
     volumes:
       - ./web:/usr/share/nginx/html
       - ./templates/config.js.template:/etc/nginx/templates/config.js.template:ro
@@ -71,8 +71,8 @@ services:
       - ./templates/tiles-proxy.conf:/etc/nginx/tiles-proxy.conf:ro
       - ${DATA_DIR:-./data}/certs:/etc/nginx/certs:ro
     ports:
-      - "${MAPS_WEB_PORT:-3011}:80"
-      - "${MAPS_WEB_TLS_PORT:-3010}:443"
+      - "${MAPS_WEB_PORT:-12011}:80"
+      - "${MAPS_WEB_TLS_PORT:-12010}:443"
     depends_on:
       - tiles
     restart: unless-stopped

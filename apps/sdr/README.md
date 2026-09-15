@@ -52,12 +52,12 @@ make install ARGS="sdr"
 ./apps/sdr/install.sh
 ```
 
-Then visit `http://localhost:3040/` (or whatever you set `SDR_PORT`
-to - also reachable at `http://<device-ip>:3040/` from another device
+Then visit `http://localhost:12050/` (or whatever you set `SDR_PORT`
+to - also reachable at `http://<device-ip>:12050/` from another device
 on the LAN).
 
 **One manual step after first install:** log in at
-`http://localhost:3040/settings` with the admin account configured
+`http://localhost:12050/settings` with the admin account configured
 during install, then add your RTL-SDR device and at least one
 frequency profile under *Settings > SDR Devices and Profiles*.
 OpenWebRX has no supported, stable file format for pre-configuring

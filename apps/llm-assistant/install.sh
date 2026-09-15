@@ -18,7 +18,7 @@ prompt_if_unset DATA_DIR \
 
 prompt_if_unset LLM_ASSISTANT_PORT \
   "Port to publish the chat UI on (http://localhost:<port>/)" \
-  "3050" "$ENV_FILE"
+  "12020" "$ENV_FILE"
 
 prompt_if_unset LLM_ASSISTANT_MODEL \
   "Which Ollama model to pull? (CPU inference only - smaller = faster on modest hardware; see https://ollama.com/library, e.g. llama3.2:3b/qwen2.5:7b/mistral:7b)" \
@@ -55,4 +55,4 @@ else
 fi
 
 mark_installed llm-assistant
-echo "== llm-assistant installed. Visit http://localhost:${LLM_ASSISTANT_PORT:-3050}/ =="
+echo "== llm-assistant installed. Visit http://localhost:${LLM_ASSISTANT_PORT:-12020}/ =="

@@ -20,8 +20,8 @@ port(s).
  │   │  disabled for now)  │   │  ZIMs by default)  │   │  translation)  │   │
  │   └──────────┬──────────┘   └─────────┬──────────┘   └────────┬────────┘   │
  └──────────────┼─────────────────────────┼───────────────────────┼──────────┘
-                │ :3010/:3011 (web, https/http)         │ :3020 (kiwix)         │ :3030
-                │ :3012 (tiles)           │                       │
+                │ :12010/:12011 (web, https/http)         │ :12040 (kiwix)         │ :12030
+                │ :12012 (tiles)           │                       │
                 ▼                         ▼                       ▼
            http://<device-ip>:<port>/  (LAN or localhost)
 ```
@@ -31,7 +31,7 @@ full port list, e.g. `apps/sdr`, `apps/tak-server`, and
 `apps/llm-assistant`. `apps/tak-server`
 publishes `:19023` (admin UI), `:8087`/`:8089` (plain/TLS CoT - what
 ATAK/WinTAK/iTAK actually connect to), and `:8080`/`:8443` (plain/TLS
-data package transfer). `apps/llm-assistant` publishes `:3050` (chat
+data package transfer). `apps/llm-assistant` publishes `:12020` (chat
 UI); its `ollama` model-runtime container isn't published to the host
 at all, only reachable from `open-webui` over the compose-internal
 network.)
@@ -42,7 +42,7 @@ network.)
 1. A client (phone/laptop) connects to the device's LAN/WiFi and browses
    directly to `http://<device-ip>:<port>/` (or `https://` where an app
    defaults to that - e.g. offline-maps, see point 3) for whichever
-   app/service it wants (e.g. `:3010` for the maps frontend, `:3020`
+   app/service it wants (e.g. `:12010` for the maps frontend, `:12040`
    for the offline Kiwix reference content).
 2. Each container publishes its port straight to the host - no routing,
    discovery, or path-rewriting layer in between.
@@ -98,11 +98,13 @@ no shared infra, no orchestrator" rule above - on purpose, and narrowly:
   show up. This scan happens once at startup and again whenever the
   dashboard's "Rescan" button is used - not on every request.
 - It reads each other app's status by inspecting `podman ps` for that
-  app's compose-project label, and starts/stops apps by invoking that
-  app's own `up.sh`/`down.sh` - never `podman-compose` directly on
-  another app's behalf. Every other app's own idempotent install
-  contract (`docs/ADDING_AN_APP.md`) is completely unaffected; the
-  dashboard is just a UI in front of the same scripts you'd run by hand.
+  app's compose-project label, and starts/stops apps by running the
+  command that app's own `manifest.json` declares (`"start"`/`"stop"`
+  fields - default `./up.sh`/`./down.sh`, see `docs/ADDING_AN_APP.md`) -
+  never `podman-compose` directly on another app's behalf. Every other
+  app's own idempotent install contract (`docs/ADDING_AN_APP.md`) is
+  completely unaffected; the dashboard is just a UI in front of the same
+  scripts you'd run by hand.
 - This was chosen over containerizing the dashboard and bind-mounting
   the podman socket + this repo into it, which would work but grants a
   container root-equivalent control over the whole host's podman and

@@ -17,7 +17,7 @@ prompt_if_unset DATA_DIR \
 
 prompt_if_unset SDR_PORT \
   "Port to publish sdr on (http://localhost:<port>/)" \
-  "3040" "$ENV_FILE"
+  "12050" "$ENV_FILE"
 
 prompt_if_unset TZ \
   "Timezone for the container (e.g. America/New_York)" \
@@ -57,9 +57,9 @@ echo "Starting sdr..."
 podman-compose -f "${APP_DIR}/docker-compose.yml" up -d
 
 mark_installed sdr
-echo "== sdr installed. Visit http://localhost:${SDR_PORT:-3040}/ =="
+echo "== sdr installed. Visit http://localhost:${SDR_PORT:-12050}/ =="
 echo "   One-time manual step: log in with the admin account above at"
-echo "   http://localhost:${SDR_PORT:-3040}/settings and add your RTL-SDR"
+echo "   http://localhost:${SDR_PORT:-12050}/settings and add your RTL-SDR"
 echo "   device + at least one frequency profile (Settings > SDR Devices"
 echo "   and Profiles) - OpenWebRX has no supported way to pre-configure"
 echo "   this from a file, so it can't be automated here."

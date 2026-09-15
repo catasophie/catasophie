@@ -5,8 +5,11 @@
   "icon": "map",
   "protocol": "https",
   "path": "/",
+  "start": "./up.sh",
+  "stop": "./down.sh",
+  "subdomain": "map",
   "port": {
     "envVar": "MAPS_WEB_TLS_PORT",
-    "default": 3010
+    "default": 12010
   }
 }

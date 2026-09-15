@@ -30,7 +30,7 @@ See also `apps/external/README.md` for the short version.
 Unlike first-party apps, `apps/external/<id>/` only *requires*:
 
 - `docker-compose.yml` - and it must still publish its port(s) via an
-  env var with a default (`${MY_TOOL_PORT:-8000}:8000`), same
+  env var with a default (`${MY_TOOL_PORT:-12070}:8000`), same
   convention as first-party apps. This is the one rule that survives
   from the full contract - without it, port-collision checks and
   `.env`-based reconfiguration have nothing to hook into.
@@ -42,7 +42,7 @@ Unlike first-party apps, `apps/external/<id>/` only *requires*:
     "description": "...",
     "category": "...",
     "icon": "server",
-    "port": { "envVar": "MY_TOOL_PORT", "default": 8000 },
+    "port": { "envVar": "MY_TOOL_PORT", "default": 12070 },
     "type": "external",
     "source": "https://github.com/someone/some-tool.git"
   }
@@ -58,8 +58,16 @@ Everything else is optional:
   `docs/ADDING_AN_APP.md`'s contract for each).
 - `.env.example` - copied to `.env` on first run if present, same as
   first-party apps.
+- `"start"`/`"stop"` fields in `manifest.json` (see
+  `docs/ADDING_AN_APP.md`) - a plain shell command, run with the app's
+  own directory as its working directory, used by the dashboard's
+  Start/Stop buttons and by `external_up`/`external_down` below instead
+  of assuming `up.sh`/`down.sh` by name. Handy for a third-party app
+  that doesn't ship either script at all - set these directly instead
+  of adding a one-line wrapper script just to satisfy the convention.
 
-When any of these scripts are missing, a generic driver
+When none of `up.sh`/`down.sh` exist *and* `manifest.json` doesn't
+declare `"start"`/`"stop"` either, a generic driver
 (`apps/cli/scripts/lib/external.sh`) falls back to driving
 `podman-compose` directly against `docker-compose.yml` (and a plain
 `.env` copy/touch for config).
@@ -67,23 +75,27 @@ When any of these scripts are missing, a generic driver
 ## Mandatory review before anything runs
 
 Third-party content runs arbitrary containers - and arbitrary shell
-code, if it ships `install.sh`/etc. - with your user's podman
-privileges. Before `install`/`update` will do anything with an external
-app, you must explicitly review it:
+code, if it ships `install.sh`/etc., or declares a `"start"`/`"stop"`
+command in `manifest.json` - with your user's podman privileges.
+Before `install`/`update` will do anything with an external app, you
+must explicitly review it:
 
 ```sh
 ./apps/cli/scripts/review-external.sh <id>
 # or: make review-external ARGS="<id>"
 ```
 
-This prints every reviewable file (`docker-compose.yml` and any
-`install.sh`/`uninstall.sh`/`up.sh`/`down.sh`/`.env.example`) and asks
-for explicit confirmation before recording a content hash as
+This prints every reviewable file (`manifest.json`, `docker-compose.yml`,
+and any `install.sh`/`uninstall.sh`/`up.sh`/`down.sh`/`.env.example`)
+and asks for explicit confirmation before recording a content hash as
 "reviewed". `install`/`update`/the dashboard's Start button all check
 this hash and refuse to run the app if it doesn't match - including
 after the files change (e.g. `make update` pulling new commits into an
 app you originally reviewed at an older commit forces a re-review
-before it's restarted).
+before it's restarted). `manifest.json` is included precisely because
+its `"start"`/`"stop"` fields can define the actual command that runs -
+changing them (even without touching any other file) requires
+re-review, same as changing `up.sh`/`down.sh` themselves would.
 
 The dashboard shows apps pending (re-)review as **Needs review** and
 disables their Start button - the review step itself is CLI-only (it

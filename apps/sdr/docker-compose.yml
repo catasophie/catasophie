@@ -33,5 +33,5 @@ services:
     tmpfs:
       - /tmp/openwebrx
     ports:
-      - "${SDR_PORT:-3040}:8073"
+      - "${SDR_PORT:-12050}:8073"
     restart: unless-stopped

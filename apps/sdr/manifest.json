@@ -5,8 +5,10 @@
   "icon": "radio",
   "protocol": "http",
   "path": "/",
+  "start": "./up.sh",
+  "stop": "./down.sh",
   "port": {
     "envVar": "SDR_PORT",
-    "default": 3040
+    "default": 12050
   }
 }

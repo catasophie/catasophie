@@ -34,8 +34,8 @@ bind-mounted into it. So:
 ./apps/dashboard/down.sh      # stop
 ```
 
-Then visit `http://localhost:8000/` (or whatever `DASHBOARD_PORT` is set
-to in `.env` - also reachable at `http://<device-ip>:8000/` from another
+Then visit `http://localhost:12060/` (or whatever `DASHBOARD_PORT` is set
+to in `.env` - also reachable at `http://<device-ip>:12060/` from another
 device on the LAN).
 
 ## Autostart on boot
@@ -76,7 +76,7 @@ the dashboard, edit (or create) that app's own `manifest.json`, e.g.:
   "description": "One short sentence, shown on the dashboard card.",
   "category": "Navigation",
   "icon": "map",
-  "port": { "envVar": "MAPS_WEB_PORT", "default": 3010 }
+  "port": { "envVar": "MAPS_WEB_PORT", "default": 12010 }
 }
 ```
 
